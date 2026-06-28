@@ -1,7 +1,5 @@
 use iam_platform::config::db_config::connect_db;
 
-
-
 #[tokio::main]
 async fn main(){
 
