@@ -10,3 +10,4 @@ pub struct Organization {
     pub created_at: DateTime<Utc>,
     pub is_deleted: bool,
 }
+
