@@ -20,19 +20,17 @@ pub fn verify_password(password: &str, hashed_passwrd: &str) -> Result<bool, App
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
-    pub sid: Uuid,
     pub sub: Uuid,
     pub exp: usize,
 }
 
-pub fn create_token(user_id: Uuid, sid: Uuid) -> Result<String, jsonwebtoken::errors::Error> {
+pub fn create_token(user_id: Uuid) -> Result<String, jsonwebtoken::errors::Error> {
     dotenvy::dotenv().ok();
     let secret = env::var("JWT_SECRET").expect("JWT_Secret Not Found");
 
     let token = Claims {
-        sid: sid,
         sub: user_id,
-        exp: (Utc::now() + Duration::hours(24)).timestamp() as usize,
+        exp: (Utc::now() + Duration::minutes(15)).timestamp() as usize,
     };
 
     encode(

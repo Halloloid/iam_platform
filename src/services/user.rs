@@ -1,6 +1,10 @@
+use std::net::IpAddr;
+
+use rand::Rng;
+use sha2::{Digest, Sha256};
 use sqlx::{Pool, Postgres};
 
-use crate::{config::{auth_config::hash_password, response_config::AppError}, models::user::Create, repositories::{self, user::check_email}};
+use crate::{config::{auth_config::{create_token, hash_password, verify_password}, response_config::AppError}, models::user::{Create, LoginReq, LoginRes}, repositories::{self, session::creat_session, user::{check_email, fnd_by_email}}};
 
 pub async fn register(pool:&Pool<Postgres>,req:Create) -> Result<(),AppError>{
 
@@ -12,4 +16,23 @@ pub async fn register(pool:&Pool<Postgres>,req:Create) -> Result<(),AppError>{
     }
     
     Ok(())
+}
+
+pub async fn login(pool:&Pool<Postgres>,req:LoginReq,ip:IpAddr,device:String) -> Result<LoginRes,AppError> {
+
+    let (user_id,pswd) = fnd_by_email(pool, req.email).await?;
+
+    if verify_password(&req.password, &pswd)? {
+        let mut bytes = [0u8;32];
+        rand::rng().fill_bytes(&mut bytes);
+
+        let refresh_token = hex::encode(Sha256::digest(bytes));
+
+        creat_session(pool, user_id, device, ip, refresh_token.clone()).await?;
+
+        let access_token = create_token(user_id)?;
+
+        return Ok(LoginRes { access_token, refresh_token, expires_in: 900 });
+    }
+    Err(AppError::Unauthorized)
 }

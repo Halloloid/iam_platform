@@ -1,7 +1,7 @@
 use axum::{extract::{Request, State}, middleware::Next, response::Response};
 use sqlx::PgPool;
 
-use crate::{config::{auth_config::{AuthContext, verify_token}, response_config::AppError}, repositories::{api_key::validate_api_key, session::validate_sessions}};
+use crate::{config::{auth_config::{AuthContext, verify_token}, response_config::AppError}, repositories::{api_key::validate_api_key}};
 
 pub async fn auth(
     State(pool) : State<PgPool>,
@@ -34,10 +34,6 @@ pub async fn auth(
             return Err(AppError::Unauthorized);
         };
     
-        if let Ok(revoked) =  validate_sessions(claims.sid.clone(), &pool).await {
-            if revoked {return Err(AppError::Unauthorized);}
-        }
-        
         req.extensions_mut().insert(claims);
     }
 

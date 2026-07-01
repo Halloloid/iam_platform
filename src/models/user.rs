@@ -19,3 +19,17 @@ pub struct Create{
     pub password:String,
     pub name :String
 }
+
+
+#[derive(Debug,Deserialize)]
+pub struct LoginReq{
+    pub email : String,
+    pub password : String
+}
+
+#[derive(Debug,Serialize)]
+pub struct LoginRes{
+    pub access_token:String,
+    pub refresh_token:String,
+    pub expires_in:i64
+}
