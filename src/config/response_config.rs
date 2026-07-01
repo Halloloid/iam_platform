@@ -11,7 +11,7 @@ pub enum AppError {
     Forbidden,
     NotFound,
     Conflict(String),
-    Database(sqlx::Error),
+    Database,
     InternalServerError,
     PassWordHashErr(BcryptError)
 }
@@ -24,7 +24,7 @@ impl IntoResponse for AppError {
             AppError::Forbidden => (StatusCode::FORBIDDEN,Json("Forbidden")).into_response(),
             AppError::NotFound => (StatusCode::NOT_FOUND,Json("Not Found")).into_response(),
             AppError::Conflict(msg) => (StatusCode::CONFLICT,Json(msg)).into_response(),
-            AppError::Database(_) => (StatusCode::INTERNAL_SERVER_ERROR,Json("Data Base Error")).into_response(),
+            AppError::Database => (StatusCode::INTERNAL_SERVER_ERROR,Json("Data Base Error")).into_response(),
             AppError::PassWordHashErr(_) => (StatusCode::INTERNAL_SERVER_ERROR,Json("Password hash Error")).into_response(),
             AppError::InternalServerError => (StatusCode::INTERNAL_SERVER_ERROR,Json("Internal Server Error")).into_response(),
         }
@@ -33,13 +33,19 @@ impl IntoResponse for AppError {
 
 
 impl From<sqlx::Error> for AppError {
-    fn from(err: sqlx::Error) -> Self {
-        AppError::Database(err)
+    fn from(_: sqlx::Error) -> Self {
+        AppError::Database
     }
 }
 
 impl From<BcryptError> for  AppError{
     fn from(err: BcryptError) -> Self {
         AppError::PassWordHashErr(err)
+    }
+}
+
+impl From<jsonwebtoken::errors::Error> for AppError {
+    fn from(_: jsonwebtoken::errors::Error) -> Self {
+        AppError::Unauthorized
     }
 }

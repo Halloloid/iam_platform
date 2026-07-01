@@ -18,17 +18,19 @@ pub fn verify_password(password: &str, hashed_passwrd: &str) -> Result<bool, App
     Ok(verify)
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
+    pub sid: Uuid,
     pub sub: Uuid,
     pub exp: usize,
 }
 
-pub fn create_token(user_id: Uuid) -> Result<String, jsonwebtoken::errors::Error> {
+pub fn create_token(user_id: Uuid, sid: Uuid) -> Result<String, jsonwebtoken::errors::Error> {
     dotenvy::dotenv().ok();
     let secret = env::var("JWT_SECRET").expect("JWT_Secret Not Found");
 
     let token = Claims {
+        sid: sid,
         sub: user_id,
         exp: (Utc::now() + Duration::hours(24)).timestamp() as usize,
     };
@@ -40,12 +42,16 @@ pub fn create_token(user_id: Uuid) -> Result<String, jsonwebtoken::errors::Error
     )
 }
 
-pub fn verify_token(token:&str) -> Result<Claims,jsonwebtoken::errors::Error> {
+pub fn verify_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
     dotenvy::dotenv().ok();
 
     let secret = env::var("JWT_SECRET").expect("JWT_Secret Not Found");
 
-    let token_data = decode::<Claims>(token, &DecodingKey::from_secret(secret.as_bytes()), &Validation::default())?;
+    let token_data = decode::<Claims>(
+        token,
+        &DecodingKey::from_secret(secret.as_bytes()),
+        &Validation::default(),
+    )?;
 
     Ok(token_data.claims)
 }
