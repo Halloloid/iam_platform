@@ -1,7 +1,7 @@
 use std::net::IpAddr;
 
 use chrono::{DateTime, Utc};
-use serde::{self, Serialize};
+use serde::{self, Deserialize, Serialize};
 use sqlx::{prelude::FromRow};
 use uuid::Uuid;
 
@@ -15,4 +15,10 @@ pub struct Session {
     pub created_at: DateTime<Utc>,
     pub expires_at: DateTime<Utc>,
     pub is_revoked: bool,
+}
+
+
+#[derive(Debug,Deserialize)]
+pub struct ReqToken{
+    pub refresh_token:String
 }

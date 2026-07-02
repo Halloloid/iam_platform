@@ -3,7 +3,7 @@ use std::net::IpAddr;
 use sqlx::{Pool, Postgres, types::ipnetwork::IpNetwork};
 use uuid::Uuid;
 
-use crate::{config::response_config::AppError};
+use crate::config::response_config::AppError;
 
 pub async fn validate_sessions(sid: Uuid, pool: &Pool<Postgres>) -> Result<bool, AppError> {
     let Ok(revoked) = sqlx::query!(
@@ -67,9 +67,9 @@ pub async fn update_session(
     pool: &Pool<Postgres>,
     refresh_token: &str,
     ip: IpAddr,
-    id : Uuid
+    id: Uuid,
 ) -> Result<(), AppError> {
-    let ip:IpNetwork = ip.into();
+    let ip: IpNetwork = ip.into();
     sqlx::query!(
         "UPDATE sessions SET refresh_token=$1,ip=$2,expires_at = NOW() + INTERVAL '7 days' WHERE id = $3",
         refresh_token,
@@ -79,4 +79,17 @@ pub async fn update_session(
     .await?;
 
     Ok(())
+}
+
+pub async fn fnd_by_refresh_token(
+    pool: &Pool<Postgres>,
+    refresh_token: String,
+) -> Result<(Uuid,Uuid), AppError> {
+
+    let rec = sqlx::query!("SELECT id,user_id FROM sessions WHERE refresh_token = $1",refresh_token).fetch_optional(pool).await?;
+
+    if let Some(rec) = rec {
+        return Ok((rec.id,rec.user_id));
+    } 
+    Err(AppError::Unauthorized)   
 }

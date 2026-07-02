@@ -32,3 +32,4 @@ pub async fn fnd_by_email(pool:&Pool<Postgres>,email:String) -> Result<(Uuid,Str
         return Err(AppError::Unauthorized);
     }
 }
+
