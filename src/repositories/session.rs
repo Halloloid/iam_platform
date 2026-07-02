@@ -71,7 +71,7 @@ pub async fn update_session(
 ) -> Result<(), AppError> {
     let ip: IpNetwork = ip.into();
     sqlx::query!(
-        "UPDATE sessions SET refresh_token=$1,ip=$2,expires_at = NOW() + INTERVAL '7 days' WHERE id = $3",
+        "UPDATE sessions SET refresh_token=$1,ip=$2,expires_at = NOW() + INTERVAL '7 days' WHERE id = $3 AND is_revoked=false",
         refresh_token,
         ip,
         id
@@ -92,4 +92,14 @@ pub async fn fnd_by_refresh_token(
         return Ok((rec.id,rec.user_id));
     } 
     Err(AppError::Unauthorized)   
+}
+
+pub async fn revoke_session(
+    pool: &Pool<Postgres>,
+    refresh_token: String
+) -> Result<(),AppError>{
+    sqlx::query!("
+        UPDATE sessions SET is_revoked=true WHERE refresh_token=$1",refresh_token).execute(pool).await?;
+
+    Ok(())
 }

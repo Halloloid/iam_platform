@@ -6,10 +6,17 @@ use axum::{
     http::{HeaderMap, StatusCode, header},
     response::IntoResponse,
 };
+use serde_json::{Value, json};
 use sqlx::PgPool;
 
 use crate::{
-    config::response_config::AppError, models::{session::ReqToken, user::{Create, LoginReq, LoginRes}}, services,
+    config::response_config::AppError,
+    models::{
+        session::ReqToken,
+        user::{Create, LoginReq, LoginRes},
+    },
+    repositories::session::revoke_session,
+    services,
 };
 
 pub async fn register(
@@ -50,8 +57,6 @@ pub async fn refresh(
     headers: HeaderMap,
     Json(req): Json<ReqToken>,
 ) -> Result<Json<LoginRes>, AppError> {
-
-
     let ip: IpAddr = headers
         .get(header::FORWARDED)
         .and_then(|v| v.to_str().ok())
@@ -63,5 +68,21 @@ pub async fn refresh(
     let res = services::user::refresh(&pool, req.refresh_token, ip).await?;
 
     Ok(Json(res))
+}
 
+pub async fn logout(
+    State(pool): State<PgPool>,
+    Json(req): Json<ReqToken>,
+) -> Result<Json<Value>, AppError> {
+    revoke_session(&pool, req.refresh_token).await?;
+
+    Ok(
+        Json(
+            json!(
+            {
+                "logout":"SuccessFull"
+            }
+            )
+        )
+    )
 }
