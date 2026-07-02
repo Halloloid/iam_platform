@@ -1,22 +1,16 @@
 use std::net::IpAddr;
 
 use axum::{
-    Json,
-    extract::State,
-    http::{HeaderMap, StatusCode, header},
-    response::IntoResponse,
+    Extension, Json, extract::State, http::{HeaderMap, StatusCode, header}, response::IntoResponse,
 };
 use serde_json::{Value, json};
 use sqlx::PgPool;
 
 use crate::{
-    config::response_config::AppError,
-    models::{
+    config::{auth_config::Claims, response_config::AppError}, models::{
         session::ReqToken,
         user::{Create, LoginReq, LoginRes},
-    },
-    repositories::session::revoke_session,
-    services,
+    }, repositories::{session::revoke_session, user::fnd_by_user_id}, services,
 };
 
 pub async fn register(
@@ -85,4 +79,16 @@ pub async fn logout(
             )
         )
     )
+}
+
+
+pub async fn view_profile(
+    Extension(claims) : Extension<Claims>,
+    State(pool): State<PgPool>
+) -> Result<impl IntoResponse,AppError>{
+    let user_id = claims.sub;
+
+    let user = fnd_by_user_id(&pool, user_id).await?;
+
+    Ok(Json(user))
 }

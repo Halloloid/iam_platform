@@ -33,3 +33,11 @@ pub struct LoginRes{
     pub refresh_token:String,
     pub expires_in:i64
 }
+
+#[derive(Debug,Serialize)]
+pub struct Profile{
+    pub id:Uuid,
+    pub email : String,
+    pub name :String,
+    pub created_at : DateTime<Utc>
+}
