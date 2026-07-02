@@ -41,3 +41,8 @@ pub struct Profile{
     pub name :String,
     pub created_at : DateTime<Utc>
 }
+
+#[derive(Debug,Deserialize)]
+pub struct UpdateProfile{
+    pub name : String
+}

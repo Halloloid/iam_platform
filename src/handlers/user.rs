@@ -8,9 +8,8 @@ use sqlx::PgPool;
 
 use crate::{
     config::{auth_config::Claims, response_config::AppError}, models::{
-        session::ReqToken,
-        user::{Create, LoginReq, LoginRes},
-    }, repositories::{session::revoke_session, user::fnd_by_user_id}, services,
+        session::ReqToken, user::{Create, LoginReq, LoginRes, UpdateProfile},
+    }, repositories::{session::revoke_session, user::{fnd_by_user_id, update_user}}, services,
 };
 
 pub async fn register(
@@ -91,4 +90,16 @@ pub async fn view_profile(
     let user = fnd_by_user_id(&pool, user_id).await?;
 
     Ok(Json(user))
+}
+
+pub async fn update_profile(
+    Extension(claims) : Extension<Claims>,
+    State(pool): State<PgPool>,
+    Json(name): Json<UpdateProfile>
+) -> Result<impl IntoResponse,AppError>{
+    let user_id = claims.sub;
+
+    update_user(&pool, user_id, name.name).await?;
+
+    Ok(Json(json!({"updation":"SuccessFull"})))
 }

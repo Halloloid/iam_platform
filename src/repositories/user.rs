@@ -48,3 +48,15 @@ pub async fn fnd_by_user_id(pool:&Pool<Postgres>,id:Uuid) -> Result<Profile,AppE
     }
 }
 
+pub async fn update_user(pool:&Pool<Postgres>,id:Uuid,name:String) -> Result<(),AppError> {
+    sqlx::query!(
+        "UPDATE users SET name = $1 WHERE id = $2 AND is_deleted = false",
+        name,
+        id
+    ).execute(pool)
+    .await
+    .map_err(|_| AppError::Database)?;
+
+    Ok(())
+}
+
