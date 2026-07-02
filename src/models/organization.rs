@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use serde::{self, Serialize};
+use serde::{self, Deserialize, Serialize};
 use sqlx::prelude::FromRow;
 use uuid::Uuid;
 
@@ -11,3 +11,8 @@ pub struct Organization {
     pub is_deleted: bool,
 }
 
+
+#[derive(Debug,Deserialize)]
+pub struct CreateOrgReq{
+    pub name : String
+}

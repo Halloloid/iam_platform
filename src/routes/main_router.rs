@@ -1,7 +1,7 @@
 use axum::{middleware, Router, routing::{get,post}};
 use sqlx::{Pool, Postgres};
 
-use crate::{handlers::health, routes::user_router::user_router};
+use crate::{handlers::health, routes::{organization_router::organization_router, user_router::user_router}};
 use crate::{
     handlers::user::{login, logout, refresh, register},
     middleware::auth_middleware::auth,
@@ -17,6 +17,7 @@ pub fn main_router(pool: Pool<Postgres>) -> Router {
         .route("/auth/logout", post(logout));
 
     let protected_apis = Router::new()
+        .merge(organization_router())
         .merge(user_router())
         .route_layer(middleware::from_fn_with_state(pool.clone(), auth));
 
