@@ -3,6 +3,7 @@ use axum::{
     routing::{get, post},
 };
 use sqlx::{Pool, Postgres};
+use tower_http::trace::TraceLayer;
 
 use crate::{
     handlers::health,
@@ -30,4 +31,5 @@ pub fn main_router(pool: Pool<Postgres>) -> Router {
         .merge(public_apis)
         .merge(protected_apis)
         .with_state(pool)
+        .layer(TraceLayer::new_for_http())
 }
