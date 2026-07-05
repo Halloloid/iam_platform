@@ -2,7 +2,7 @@ use std::{env, error::Error, time::Duration};
 
 use sqlx::{Pool, Postgres, postgres::PgPoolOptions};
 
-pub async fn connect_db() -> Result<Pool<Postgres>,Box<dyn Error+'static>>{
+pub async fn connect_db() -> Result<Pool<Postgres>, Box<dyn Error + 'static>> {
     dotenvy::dotenv().ok();
 
     let url = env::var("DATABASE_URL").expect("DATABASE URL NOT FOUND");

@@ -55,15 +55,14 @@ pub fn verify_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> 
 }
 
 #[derive(Clone)]
-pub struct ApiKeyRecord{
-    pub id : Uuid,
-    pub org_id : Uuid,
-    pub scopes : Vec<String>
+pub struct ApiKeyRecord {
+    pub id: Uuid,
+    pub org_id: Uuid,
+    pub scopes: Vec<String>,
 }
 
-
 #[derive(Clone)]
-pub enum AuthContext{
+pub enum AuthContext {
     User(Claims),
-    ApiKey(ApiKeyRecord)
+    ApiKey(ApiKeyRecord),
 }

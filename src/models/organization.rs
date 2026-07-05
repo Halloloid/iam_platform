@@ -11,8 +11,7 @@ pub struct Organization {
     pub is_deleted: bool,
 }
 
-
-#[derive(Debug,Deserialize)]
-pub struct CreateOrgReq{
-    pub name : String
+#[derive(Debug, Deserialize)]
+pub struct CreateOrgReq {
+    pub name: String,
 }

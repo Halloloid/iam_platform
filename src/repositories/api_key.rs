@@ -20,7 +20,7 @@ pub async fn validate_api_key(
         .map(|r| r.name)
         .collect();
 
-    Ok(ApiKeyRecord{
+    Ok(ApiKeyRecord {
         id: key.id,
         org_id: key.org_id,
         scopes,

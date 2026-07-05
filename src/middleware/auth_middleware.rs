@@ -1,17 +1,24 @@
-use axum::{extract::{Request, State}, middleware::Next, response::Response};
+use axum::{
+    extract::{Request, State},
+    middleware::Next,
+    response::Response,
+};
 use sqlx::PgPool;
 
-use crate::{config::{auth_config::{AuthContext, verify_token}, response_config::AppError}, repositories::{api_key::validate_api_key}};
+use crate::{
+    config::{
+        auth_config::{AuthContext, verify_token},
+        response_config::AppError,
+    },
+    repositories::api_key::validate_api_key,
+};
 
 pub async fn auth(
-    State(pool) : State<PgPool>,
+    State(pool): State<PgPool>,
     mut req: Request,
-    next: Next
+    next: Next,
 ) -> Result<Response, AppError> {
-
-    let Some(header) = req
-        .headers()
-        .get(axum::http::header::AUTHORIZATION) else {
+    let Some(header) = req.headers().get(axum::http::header::AUTHORIZATION) else {
         return Err(AppError::Unauthorized);
     };
 
@@ -23,17 +30,17 @@ pub async fn auth(
         return Err(AppError::Unauthorized);
     };
 
-    if token.starts_with("iam_"){
+    if token.starts_with("iam_") {
         let Ok(record) = validate_api_key(token, &pool).await else {
             return Err(AppError::Database);
         };
 
         req.extensions_mut().insert(AuthContext::ApiKey(record));
-    }else {
+    } else {
         let Ok(claims) = verify_token(token) else {
             return Err(AppError::Unauthorized);
         };
-    
+
         req.extensions_mut().insert(claims);
     }
 

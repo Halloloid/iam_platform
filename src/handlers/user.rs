@@ -1,15 +1,25 @@
 use std::net::IpAddr;
 
 use axum::{
-    Extension, Json, extract::State, http::{HeaderMap, StatusCode, header}, response::IntoResponse,
+    Extension, Json,
+    extract::State,
+    http::{HeaderMap, StatusCode, header},
+    response::IntoResponse,
 };
 use serde_json::{Value, json};
 use sqlx::PgPool;
 
 use crate::{
-    config::{auth_config::Claims, response_config::AppError}, models::{
-        session::ReqToken, user::{Create, LoginReq, LoginRes, UpdateProfile},
-    }, repositories::{session::revoke_session, user::{fnd_by_user_id, update_user}}, services,
+    config::{auth_config::Claims, response_config::AppError},
+    models::{
+        session::ReqToken,
+        user::{Create, LoginReq, LoginRes, UpdateProfile},
+    },
+    repositories::{
+        session::revoke_session,
+        user::{fnd_by_user_id, update_user},
+    },
+    services,
 };
 
 pub async fn register(
@@ -69,22 +79,17 @@ pub async fn logout(
 ) -> Result<Json<Value>, AppError> {
     revoke_session(&pool, req.refresh_token).await?;
 
-    Ok(
-        Json(
-            json!(
-            {
-                "logout":"SuccessFull"
-            }
-            )
-        )
-    )
+    Ok(Json(json!(
+    {
+        "logout":"SuccessFull"
+    }
+    )))
 }
 
-
 pub async fn view_profile(
-    Extension(claims) : Extension<Claims>,
-    State(pool): State<PgPool>
-) -> Result<impl IntoResponse,AppError>{
+    Extension(claims): Extension<Claims>,
+    State(pool): State<PgPool>,
+) -> Result<impl IntoResponse, AppError> {
     let user_id = claims.sub;
 
     let user = fnd_by_user_id(&pool, user_id).await?;
@@ -93,10 +98,10 @@ pub async fn view_profile(
 }
 
 pub async fn update_profile(
-    Extension(claims) : Extension<Claims>,
+    Extension(claims): Extension<Claims>,
     State(pool): State<PgPool>,
-    Json(name): Json<UpdateProfile>
-) -> Result<impl IntoResponse,AppError>{
+    Json(name): Json<UpdateProfile>,
+) -> Result<impl IntoResponse, AppError> {
     let user_id = claims.sub;
 
     update_user(&pool, user_id, name.name).await?;

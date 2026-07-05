@@ -84,22 +84,28 @@ pub async fn update_session(
 pub async fn fnd_by_refresh_token(
     pool: &Pool<Postgres>,
     refresh_token: String,
-) -> Result<(Uuid,Uuid), AppError> {
-
-    let rec = sqlx::query!("SELECT id,user_id FROM sessions WHERE refresh_token = $1",refresh_token).fetch_optional(pool).await?;
+) -> Result<(Uuid, Uuid), AppError> {
+    let rec = sqlx::query!(
+        "SELECT id,user_id FROM sessions WHERE refresh_token = $1",
+        refresh_token
+    )
+    .fetch_optional(pool)
+    .await?;
 
     if let Some(rec) = rec {
-        return Ok((rec.id,rec.user_id));
-    } 
-    Err(AppError::Unauthorized)   
+        return Ok((rec.id, rec.user_id));
+    }
+    Err(AppError::Unauthorized)
 }
 
-pub async fn revoke_session(
-    pool: &Pool<Postgres>,
-    refresh_token: String
-) -> Result<(),AppError>{
-    sqlx::query!("
-        UPDATE sessions SET is_revoked=true WHERE refresh_token=$1",refresh_token).execute(pool).await?;
+pub async fn revoke_session(pool: &Pool<Postgres>, refresh_token: String) -> Result<(), AppError> {
+    sqlx::query!(
+        "
+        UPDATE sessions SET is_revoked=true WHERE refresh_token=$1",
+        refresh_token
+    )
+    .execute(pool)
+    .await?;
 
     Ok(())
 }

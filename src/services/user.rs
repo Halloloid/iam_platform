@@ -8,8 +8,12 @@ use crate::{
     config::{
         auth_config::{create_token, hash_password, verify_password},
         response_config::AppError,
-    }, models::user::{Create, LoginReq, LoginRes}, repositories::{
-        self, session::{creat_session, find_active_session, fnd_by_refresh_token, update_session}, user::{check_email, fnd_by_email},
+    },
+    models::user::{Create, LoginReq, LoginRes},
+    repositories::{
+        self,
+        session::{creat_session, find_active_session, fnd_by_refresh_token, update_session},
+        user::{check_email, fnd_by_email},
     },
 };
 
@@ -60,16 +64,15 @@ pub async fn login(
     Err(AppError::Unauthorized)
 }
 
-pub async fn refresh(pool: &Pool<Postgres>, req: String,ip: IpAddr) -> Result<LoginRes, AppError> {
-
-    let (sid,user_id) = fnd_by_refresh_token(pool, req).await?;
+pub async fn refresh(pool: &Pool<Postgres>, req: String, ip: IpAddr) -> Result<LoginRes, AppError> {
+    let (sid, user_id) = fnd_by_refresh_token(pool, req).await?;
 
     let mut bytes = [0u8; 32];
     rand::rng().fill_bytes(&mut bytes);
 
-    let refresh_token = hex::encode(Sha256::digest(bytes)); 
+    let refresh_token = hex::encode(Sha256::digest(bytes));
 
-    update_session(pool, &refresh_token, ip,sid).await?;
+    update_session(pool, &refresh_token, ip, sid).await?;
 
     let access_token = create_token(user_id)?;
 
@@ -79,4 +82,3 @@ pub async fn refresh(pool: &Pool<Postgres>, req: String,ip: IpAddr) -> Result<Lo
         expires_in: 900,
     })
 }
-
