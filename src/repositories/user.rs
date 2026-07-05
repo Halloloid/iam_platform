@@ -39,9 +39,9 @@ pub async fn fnd_by_email(
         .await?;
 
     if let Some(pswd) = paswd {
-        return Ok((pswd.id, pswd.password));
+        Ok((pswd.id, pswd.password))
     } else {
-        return Err(AppError::Unauthorized);
+        Err(AppError::Unauthorized)
     }
 }
 
@@ -55,9 +55,9 @@ pub async fn fnd_by_user_id(pool: &Pool<Postgres>, id: Uuid) -> Result<Profile, 
     .await;
 
     match res {
-        Ok(None) => return Err(AppError::NotFound),
-        Ok(Some(res)) => return Ok(res),
-        Err(_) => return Err(AppError::Database),
+        Ok(None) => Err(AppError::NotFound),
+        Ok(Some(res)) => Ok(res),
+        Err(_) => Err(AppError::Database),
     }
 }
 
