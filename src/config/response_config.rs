@@ -4,6 +4,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use bcrypt::BcryptError;
+use validator::ValidationErrors;
 
 pub enum AppError {
     BadRequest(String),
@@ -14,6 +15,7 @@ pub enum AppError {
     Database,
     InternalServerError,
     PassWordHashErr(BcryptError),
+    Validation(ValidationErrors),
 }
 
 impl IntoResponse for AppError {
@@ -39,6 +41,9 @@ impl IntoResponse for AppError {
                 Json("Internal Server Error"),
             )
                 .into_response(),
+            AppError::Validation(validation_errors) => {
+                (StatusCode::BAD_REQUEST, Json(validation_errors)).into_response()
+            }
         }
     }
 }

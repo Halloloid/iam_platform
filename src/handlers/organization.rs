@@ -1,6 +1,7 @@
 use axum::{Extension, Json, extract::State, http::StatusCode, response::IntoResponse};
 use serde_json::json;
 use sqlx::PgPool;
+use validator::Validate;
 
 use crate::{
     config::{auth_config::Claims, response_config::AppError},
@@ -13,6 +14,7 @@ pub async fn create(
     Extension(claims): Extension<Claims>,
     Json(body): Json<CreateOrgReq>,
 ) -> Result<impl IntoResponse, AppError> {
+    body.validate().map_err(AppError::Validation)?;
     let user_id = claims.sub;
 
     let org_id = create_organization(user_id, body.name, &pool).await?;

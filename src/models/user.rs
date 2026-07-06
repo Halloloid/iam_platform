@@ -2,6 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{self, Deserialize, Serialize};
 use sqlx::prelude::FromRow;
 use uuid::Uuid;
+use validator::Validate;
 
 #[derive(Debug, Clone, FromRow, Serialize)]
 pub struct User {
@@ -13,16 +14,24 @@ pub struct User {
     pub is_deleted: bool,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
 pub struct Create {
+    #[validate(email(message = "must be a valid email"))]
     pub email: String,
+
+    #[validate(length(min = 8, message = "Password must be at least 8 chars"))]
     pub password: String,
+
+    #[validate(length(min = 1, max = 50, message = "name is required"))]
     pub name: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
 pub struct LoginReq {
+    #[validate(email(message = "must be a valid email"))]
     pub email: String,
+
+    #[validate(length(min = 8, message = "Password must be at least 8 chars"))]
     pub password: String,
 }
 
@@ -41,7 +50,8 @@ pub struct Profile {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
 pub struct UpdateProfile {
+    #[validate(length(min = 1, max = 50, message = "name is required"))]
     pub name: String,
 }

@@ -8,6 +8,7 @@ use axum::{
 };
 use serde_json::{Value, json};
 use sqlx::PgPool;
+use validator::Validate;
 
 use crate::{
     config::{auth_config::Claims, response_config::AppError},
@@ -26,6 +27,7 @@ pub async fn register(
     State(pool): State<PgPool>,
     Json(req): Json<Create>,
 ) -> Result<impl IntoResponse, AppError> {
+    req.validate().map_err(AppError::Validation)?;
     services::user::register(&pool, req).await?;
 
     Ok(StatusCode::CREATED)
@@ -36,6 +38,7 @@ pub async fn login(
     headers: HeaderMap,
     Json(req): Json<LoginReq>,
 ) -> Result<Json<LoginRes>, AppError> {
+    req.validate().map_err(AppError::Validation)?;
     let device = headers
         .get(header::USER_AGENT)
         .and_then(|x| x.to_str().ok())
@@ -102,6 +105,7 @@ pub async fn update_profile(
     State(pool): State<PgPool>,
     Json(name): Json<UpdateProfile>,
 ) -> Result<impl IntoResponse, AppError> {
+    name.validate().map_err(AppError::Validation)?;
     let user_id = claims.sub;
 
     update_user(&pool, user_id, name.name).await?;
