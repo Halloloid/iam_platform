@@ -9,7 +9,6 @@ pub struct Organization {
     pub id: Uuid,
     pub name: String,
     pub created_at: DateTime<Utc>,
-    pub is_deleted: bool,
 }
 
 #[derive(Debug, Deserialize, Validate)]

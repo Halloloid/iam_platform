@@ -1,7 +1,7 @@
 use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
-use crate::config::response_config::AppError;
+use crate::{config::response_config::AppError, models::organization::Organization};
 
 pub async fn create_organization(
     user_id: Uuid,
@@ -58,4 +58,16 @@ pub async fn create_organization(
     transaction.commit().await.map_err(|_| AppError::Database)?;
 
     Ok(org.id)
+}
+
+pub async fn all_organizations(pool: &Pool<Postgres>) -> Result<Vec<Organization>, AppError> {
+    let data = sqlx::query_as!(
+        Organization,
+        "SELECT id,name,created_at FROM organizations WHERE is_deleted = false"
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|_| AppError::Database)?;
+
+    Ok(data)
 }

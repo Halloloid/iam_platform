@@ -5,8 +5,9 @@ use validator::Validate;
 
 use crate::{
     config::{auth_config::Claims, response_config::AppError},
-    models::organization::CreateOrgReq,
+    models::organization::{CreateOrgReq, Organization},
     repositories::organization::create_organization,
+    services::organization::all_org_service,
 };
 
 pub async fn create(
@@ -20,4 +21,10 @@ pub async fn create(
     let org_id = create_organization(user_id, body.name, &pool).await?;
 
     Ok((StatusCode::CREATED, Json(json!({"id":org_id}))))
+}
+
+pub async fn all_orgs(State(pool): State<PgPool>) -> Result<Json<Vec<Organization>>, AppError> {
+    let data = all_org_service(&pool).await?;
+
+    Ok(Json(data))
 }
