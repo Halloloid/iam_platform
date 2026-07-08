@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE sessions SET refresh_token=$1,ip=$2,expires_at = NOW() + INTERVAL '7 days' WHERE id = $3 AND is_revoked=false",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Inet",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f344788bb6cdc9b5232b4d1d2823418e970d4cc38f366ebc8a71326cc1d16857"
+}

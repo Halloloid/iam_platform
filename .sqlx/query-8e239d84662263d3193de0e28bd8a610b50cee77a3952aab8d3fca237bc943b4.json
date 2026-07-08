@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO role_permissions (role_id,permission_id)\n         SELECT $1,id FROM permissions",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8e239d84662263d3193de0e28bd8a610b50cee77a3952aab8d3fca237bc943b4"
+}
