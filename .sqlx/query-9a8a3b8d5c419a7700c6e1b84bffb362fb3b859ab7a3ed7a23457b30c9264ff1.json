@@ -1,0 +1,25 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COUNT(*) as count\n        FROM member_roles mr\n        INNER JOIN role_permissions rp ON rp.role_id = mr.role_id\n        INNER JOIN permissions p ON p.id = rp.permission_id\n        WHERE mr.user_id = $1 AND \n        mr.org_id = $2 AND\n        p.name = $3",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count",
+        "type_info": "Int8",
+        "origin": "Expression"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "9a8a3b8d5c419a7700c6e1b84bffb362fb3b859ab7a3ed7a23457b30c9264ff1"
+}

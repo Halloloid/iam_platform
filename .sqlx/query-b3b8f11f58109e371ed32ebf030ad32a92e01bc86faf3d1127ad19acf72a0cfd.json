@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE organizations SET name = $1 WHERE id = $2 AND is_deleted = false",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b3b8f11f58109e371ed32ebf030ad32a92e01bc86faf3d1127ad19acf72a0cfd"
+}
