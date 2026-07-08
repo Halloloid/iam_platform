@@ -6,7 +6,9 @@ use uuid::Uuid;
 use crate::{
     config::response_config::AppError,
     models::organization::{ListOrgsRes, Organization},
-    repositories::organization::{all_organizations_asc, all_organizations_desc, one_org},
+    repositories::organization::{
+        all_organizations_asc, all_organizations_desc, check_permission, one_org, update_org_name,
+    },
 };
 
 fn encode_cursor(created_at: DateTime<Utc>) -> String {
@@ -66,4 +68,21 @@ pub async fn one_org_service(
     org_id: Uuid,
 ) -> Result<Organization, AppError> {
     one_org(pool, user_id, org_id).await
+}
+
+pub async fn update_org_service(
+    pool: &Pool<Postgres>,
+    user_id: Uuid,
+    org_id: Uuid,
+    name: String,
+) -> Result<(), AppError> {
+    let allowed = check_permission(pool, user_id, org_id, "organization:update").await?;
+
+    if !allowed {
+        return Err(AppError::Forbidden);
+    }
+
+    update_org_name(org_id, name, pool).await?;
+
+    Ok(())
 }

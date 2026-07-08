@@ -135,7 +135,53 @@ pub async fn one_org(
 
     if let Some(o) = org {
         Ok(o)
-    }else {
+    } else {
         Err(AppError::NotFound)
     }
+}
+
+pub async fn check_permission(
+    pool: &Pool<Postgres>,
+    user_id: Uuid,
+    org_id: Uuid,
+    permission: &str,
+) -> Result<bool, AppError> {
+    let res = sqlx::query!(
+        "SELECT COUNT(*) as count
+        FROM member_roles mr
+        INNER JOIN role_permissions rp ON rp.role_id = mr.role_id
+        INNER JOIN permissions p ON p.id = rp.permission_id
+        WHERE mr.user_id = $1 AND 
+        mr.org_id = $2 AND
+        p.name = $3",
+        user_id,
+        org_id,
+        permission
+    )
+    .fetch_one(pool)
+    .await
+    .map_err(|_| AppError::Database)?;
+
+    Ok(res.count.unwrap_or(0) > 0)
+}
+
+pub async fn update_org_name(
+    org_id: Uuid,
+    name: String,
+    pool: &Pool<Postgres>,
+) -> Result<(), AppError> {
+    let res = sqlx::query!(
+        "UPDATE organizations SET name = $1 WHERE id = $2 AND is_deleted = false",
+        name,
+        org_id
+    )
+    .execute(pool)
+    .await
+    .map_err(|_| AppError::Database)?;
+
+    if res.rows_affected() == 0 {
+        return Err(AppError::NotFound);
+    }
+
+    Ok(())
 }

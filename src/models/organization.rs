@@ -31,3 +31,8 @@ pub struct OrgPaginationQuery {
     pub limit: Option<i64>,
     pub order: Option<String>,
 }
+
+#[derive(Debug,Deserialize)]
+pub struct OrgUpdate{
+    pub name : String
+}
