@@ -5,8 +5,8 @@ use uuid::Uuid;
 
 use crate::{
     config::response_config::AppError,
-    models::organization::ListOrgsRes,
-    repositories::organization::{all_organizations_asc, all_organizations_desc},
+    models::organization::{ListOrgsRes, Organization},
+    repositories::organization::{all_organizations_asc, all_organizations_desc, one_org},
 };
 
 fn encode_cursor(created_at: DateTime<Utc>) -> String {
@@ -58,4 +58,12 @@ pub async fn all_org_service(
         order: order.to_string(),
         limit,
     })
+}
+
+pub async fn one_org_service(
+    pool: &Pool<Postgres>,
+    user_id: Uuid,
+    org_id: Uuid,
+) -> Result<Organization, AppError> {
+    one_org(pool, user_id, org_id).await
 }

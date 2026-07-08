@@ -113,3 +113,29 @@ pub async fn all_organizations_desc(
 
     Ok(data)
 }
+
+pub async fn one_org(
+    pool: &Pool<Postgres>,
+    user_id: Uuid,
+    org_id: Uuid,
+) -> Result<Organization, AppError> {
+    let org = sqlx::query_as!(
+        Organization,
+        "SELECT o.id,o.name,o.created_at FROM organizations o 
+        INNER JOIN membership m ON m.org_id = o.id
+        WHERE m.user_id = $1 AND
+        o.id = $2 AND
+        o.is_deleted = false",
+        user_id,
+        org_id
+    )
+    .fetch_optional(pool)
+    .await
+    .map_err(|_| AppError::Database)?;
+
+    if let Some(o) = org {
+        Ok(o)
+    }else {
+        Err(AppError::NotFound)
+    }
+}
