@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
@@ -60,10 +61,51 @@ pub async fn create_organization(
     Ok(org.id)
 }
 
-pub async fn all_organizations(pool: &Pool<Postgres>) -> Result<Vec<Organization>, AppError> {
+pub async fn all_organizations_asc(
+    pool: &Pool<Postgres>,
+    user_id: Uuid,
+    cursor: Option<DateTime<Utc>>,
+    limit: i64,
+) -> Result<Vec<Organization>, AppError> {
     let data = sqlx::query_as!(
         Organization,
-        "SELECT id,name,created_at FROM organizations WHERE is_deleted = false"
+        "SELECT o.id,o.name,o.created_at FROM organizations o 
+        INNER JOIN membership m 
+        ON m.org_id = o.id 
+        WHERE m.user_id = $1 
+        AND o.is_deleted = false 
+        AND ($2::timestamptz IS NULL OR o.created_at > $2) 
+        ORDER BY o.created_at ASC
+        LIMIT $3",
+        user_id,
+        cursor,
+        limit
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|_| AppError::Database)?;
+
+    Ok(data)
+}
+pub async fn all_organizations_desc(
+    pool: &Pool<Postgres>,
+    user_id: Uuid,
+    cursor: Option<DateTime<Utc>>,
+    limit: i64,
+) -> Result<Vec<Organization>, AppError> {
+    let data = sqlx::query_as!(
+        Organization,
+        "SELECT o.id,o.name,o.created_at FROM organizations o 
+        INNER JOIN membership m 
+        ON m.org_id = o.id 
+        WHERE m.user_id = $1 
+        AND o.is_deleted = false 
+        AND ($2::timestamptz IS NULL OR o.created_at > $2) 
+        ORDER BY o.created_at DESC
+        LIMIT $3",
+        user_id,
+        cursor,
+        limit
     )
     .fetch_all(pool)
     .await

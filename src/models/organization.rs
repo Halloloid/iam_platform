@@ -16,3 +16,18 @@ pub struct CreateOrgReq {
     #[validate(length(min = 1, max = 100, message = "name is required"))]
     pub name: String,
 }
+
+#[derive(Debug, Serialize)]
+pub struct ListOrgsRes {
+    pub data: Vec<Organization>,
+    pub next_cursor: Option<String>,
+    pub order: String,
+    pub limit: i64,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct OrgPaginationQuery {
+    pub cursor: Option<String>,
+    pub limit: Option<i64>,
+    pub order: Option<String>,
+}
