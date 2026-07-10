@@ -19,3 +19,22 @@ pub async fn create_role(
 
     Ok(())
 }
+
+pub async fn role_exists(
+    pool: &Pool<Postgres>,
+    org_id: Uuid,
+    name:&str,
+) -> Result<bool,AppError>{
+
+    let exist = sqlx::query!(
+        "SELECT id FROM roles WHERE name=$1 AND org_id=$2",
+        name,
+        org_id
+    ).fetch_optional(pool).await.map_err(|_| AppError::Database)?;
+
+    if let Some(_) = exist{
+        return Ok(true);
+    }
+
+    Ok(false)
+}
