@@ -9,16 +9,14 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
-    config::{auth_config::Claims, response_config::AppError},
-    models::role::Role,
-    services::role::create_role_service,
+    config::{auth_config::Claims, response_config::AppError}, models::role::{ RoleCreation}, services::role::{all_roles_service, create_role_service},
 };
 
 pub async fn create_role_handler(
     State(pool): State<PgPool>,
     Extension(claims): Extension<Claims>,
     Path(org_id): Path<Uuid>,
-    Json(name): Json<Role>,
+    Json(name): Json<RoleCreation>,
 ) -> Result<impl IntoResponse, AppError> {
     let user_id = claims.sub;
 
@@ -30,4 +28,15 @@ pub async fn create_role_handler(
             "message":"New Role Created"
         })),
     ))
+}
+
+pub async fn all_roles_handler(
+    State(pool): State<PgPool>,
+    Extension(_): Extension<Claims>,
+    Path(org_id): Path<Uuid>,
+) -> Result<impl IntoResponse,AppError>{
+
+    let roles = all_roles_service(&pool, org_id).await?;
+
+    Ok((StatusCode::OK,Json(roles)))
 }

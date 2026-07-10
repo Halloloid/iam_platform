@@ -1,6 +1,13 @@
-use serde::{self, Deserialize};
+use serde::{self, Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]
-pub struct Role {
+pub struct RoleCreation {
     pub name: String,
+}
+
+#[derive(Debug,Serialize)]
+pub struct Role{
+    pub id : Uuid,
+    pub name:String
 }

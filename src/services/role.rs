@@ -2,7 +2,7 @@ use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
 use crate::{
-    config::response_config::AppError, repositories::{organization::check_permission, role::{create_role, role_exists}},
+    config::response_config::AppError, models::role::Role, repositories::{organization::check_permission, role::{all_roles, create_role, role_exists}},
 };
 
 pub async fn create_role_service(
@@ -24,4 +24,13 @@ pub async fn create_role_service(
     create_role(pool, org_id, name).await?;
 
     Ok(())
+}
+
+pub async fn all_roles_service(
+    pool: &Pool<Postgres>,
+    org_id: Uuid
+) -> Result<Vec<Role>,AppError>{
+    let roles = all_roles(pool, org_id).await?;
+
+    Ok(roles)
 }

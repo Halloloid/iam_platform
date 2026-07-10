@@ -1,7 +1,7 @@
 use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
-use crate::config::response_config::AppError;
+use crate::{config::response_config::AppError, models::role::Role};
 
 pub async fn create_role(
     pool: &Pool<Postgres>,
@@ -37,4 +37,16 @@ pub async fn role_exists(
     }
 
     Ok(false)
+}
+
+pub async fn all_roles(
+    pool: &Pool<Postgres>,
+    org_id: Uuid
+) -> Result<Vec<Role>,AppError>{
+    let data = sqlx::query_as!(Role,
+        "SELECT id,name FROM roles WHERE org_id = $1",
+        org_id
+    ).fetch_all(pool).await.map_err(|_| AppError::Database)?;
+
+    Ok(data)
 }
