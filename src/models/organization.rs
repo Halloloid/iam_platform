@@ -32,7 +32,7 @@ pub struct OrgPaginationQuery {
     pub order: Option<String>,
 }
 
-#[derive(Debug,Deserialize)]
-pub struct OrgUpdate{
-    pub name : String
+#[derive(Debug, Deserialize)]
+pub struct OrgUpdate {
+    pub name: String,
 }

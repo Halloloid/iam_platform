@@ -10,7 +10,10 @@ use uuid::Uuid;
 use validator::Validate;
 
 use crate::{
-    config::{auth_config::Claims, response_config::AppError}, models::organization::{CreateOrgReq, OrgPaginationQuery, OrgUpdate}, repositories::organization::create_organization, services::organization::{all_org_service, one_org_service, update_org_service},
+    config::{auth_config::Claims, response_config::AppError},
+    models::organization::{CreateOrgReq, OrgPaginationQuery, OrgUpdate},
+    repositories::organization::create_organization,
+    services::organization::{all_org_service, one_org_service, update_org_service},
 };
 
 pub async fn create(

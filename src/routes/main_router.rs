@@ -7,7 +7,9 @@ use tower_http::trace::TraceLayer;
 
 use crate::{
     handlers::health,
-    routes::{organization_router::organization_router, user_router::user_router},
+    routes::{
+        organization_router::organization_router, role::role_router, user_router::user_router,
+    },
 };
 use crate::{
     handlers::user::{login, logout, refresh, register},
@@ -25,6 +27,7 @@ pub fn main_router(pool: Pool<Postgres>) -> Router {
     let protected_apis = Router::new()
         .merge(organization_router())
         .merge(user_router())
+        .merge(role_router())
         .layer(middleware::from_fn_with_state(pool.clone(), auth));
 
     Router::new()
