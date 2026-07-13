@@ -6,7 +6,7 @@ use crate::{
     models::permission::Permission,
     repositories::{
         organization::check_permission,
-        permission::{all_permissions, assign_permission},
+        permission::{all_permissions, assign_permission, role_permission},
         role::paticular_role,
     },
 };
@@ -41,4 +41,18 @@ pub async fn assign_permissions_service(
     assign_permission(pool, permission_ids, role_id).await?;
 
     Ok(())
+}
+
+pub async fn role_permission_service(
+    pool: &PgPool,
+    role_id: Uuid,
+    org_id: Uuid,
+) -> Result<Vec<Permission>, AppError> {
+    if paticular_role(pool, org_id, role_id).await?.is_none() {
+        return Err(AppError::NotFound);
+    }
+
+    let data = role_permission(pool, role_id, org_id).await?;
+
+    Ok(data)
 }

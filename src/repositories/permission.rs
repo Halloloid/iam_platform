@@ -30,3 +30,25 @@ pub async fn assign_permission(
 
     Ok(())
 }
+
+pub async fn role_permission(
+    pool: &PgPool,
+    role_id: Uuid,
+    org_id: Uuid,
+) -> Result<Vec<Permission>, AppError> {
+    let data = sqlx::query_as!(
+        Permission,
+        "SELECT p.id,p.name FROM permissions p 
+        INNER JOIN role_permissions rp ON rp.permission_id = p.id
+        INNER JOIN roles r ON r.id = rp.role_id
+        WHERE rp.role_id = $1 AND
+        r.org_id = $2",
+        role_id,
+        org_id
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|_| AppError::Database)?;
+
+    Ok(data)
+}
