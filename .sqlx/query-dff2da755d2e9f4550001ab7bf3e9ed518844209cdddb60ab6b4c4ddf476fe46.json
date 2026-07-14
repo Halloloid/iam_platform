@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM role_permissions WHERE role_id = $1 AND permission_id = ANY($2::uuid[])",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "dff2da755d2e9f4550001ab7bf3e9ed518844209cdddb60ab6b4c4ddf476fe46"
+}
