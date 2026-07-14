@@ -11,7 +11,8 @@ use crate::{
     config::{auth_config::Claims, response_config::AppError},
     models::permission::AssignPermissions,
     services::permission::{
-        assign_permissions_service, permission_services, role_permission_service,
+        assign_permissions_service, delete_permission_of_role_service, permission_services,
+        role_permission_service,
     },
 };
 
@@ -45,6 +46,28 @@ pub async fn assign_permssion_handler(
 
     Ok(Json(json!({
         "message":"Assinged All The Permissions"
+    })))
+}
+
+pub async fn delete_permission_of_role_handler(
+    State(pool): State<PgPool>,
+    Extension(claims): Extension<Claims>,
+    Path((org_id, role_id)): Path<(Uuid, Uuid)>,
+    Json(permission_ids): Json<AssignPermissions>,
+) -> Result<impl IntoResponse, AppError> {
+    let user_id = claims.sub;
+
+    delete_permission_of_role_service(
+        user_id,
+        org_id,
+        &pool,
+        permission_ids.permission_ids,
+        role_id,
+    )
+    .await?;
+
+    Ok(Json(json!({
+        "message":"Removed The Permissions"
     })))
 }
 

@@ -31,6 +31,23 @@ pub async fn assign_permission(
     Ok(())
 }
 
+pub async fn delete_permission_of_role(
+    pool: &PgPool,
+    permission_ids: Vec<Uuid>,
+    role_id: Uuid,
+) -> Result<(), AppError> {
+    sqlx::query!(
+        "DELETE FROM role_permissions WHERE role_id = $1 AND permission_id = ANY($2::uuid[])",
+        role_id,
+        &permission_ids as &[Uuid]
+    )
+    .execute(pool)
+    .await
+    .map_err(|_| AppError::Database)?;
+
+    Ok(())
+}
+
 pub async fn role_permission(
     pool: &PgPool,
     role_id: Uuid,

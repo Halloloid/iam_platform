@@ -5,7 +5,8 @@ use axum::{
 use sqlx::PgPool;
 
 use crate::handlers::permission::{
-    all_permission_handler, assign_permssion_handler, role_permission_handler,
+    all_permission_handler, assign_permssion_handler, delete_permission_of_role_handler,
+    role_permission_handler,
 };
 
 pub fn permission_router() -> Router<PgPool> {
@@ -13,6 +14,8 @@ pub fn permission_router() -> Router<PgPool> {
         .route("/permission", get(all_permission_handler))
         .route(
             "/organization/{id}/role/{roleid}/permission",
-            post(assign_permssion_handler).get(role_permission_handler),
+            post(assign_permssion_handler)
+                .get(role_permission_handler)
+                .delete(delete_permission_of_role_handler),
         )
 }
