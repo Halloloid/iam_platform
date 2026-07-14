@@ -27,7 +27,7 @@ pub async fn check_email(pool: &Pool<Postgres>, email: String) -> Result<bool, A
         .fetch_one(pool)
         .await?;
 
-    Ok(exists.exists.unwrap())
+    Ok(exists.exists.unwrap_or(false))
 }
 
 pub async fn fnd_by_email(

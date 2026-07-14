@@ -1,4 +1,5 @@
 pub mod main_router;
+pub mod membership_router;
 pub mod organization_router;
 pub mod permission;
 pub mod role;
