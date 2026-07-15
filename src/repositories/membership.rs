@@ -1,7 +1,7 @@
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::config::response_config::AppError;
+use crate::{config::response_config::AppError, models::membership::Membership};
 
 pub async fn add_member(pool: &PgPool, org_id: Uuid, user_id: Uuid) -> Result<(), AppError> {
     sqlx::query!(
@@ -14,4 +14,17 @@ pub async fn add_member(pool: &PgPool, org_id: Uuid, user_id: Uuid) -> Result<()
     .map_err(|_| AppError::Database)?;
 
     Ok(())
+}
+
+pub async fn all_members(pool: &PgPool, org_id: Uuid) -> Result<Vec<Membership>, AppError> {
+    let data = sqlx::query_as!(
+        Membership,
+        "SELECT user_id,joined_at FROM membership WHERE org_id = $1",
+        org_id
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|_| AppError::Database)?;
+
+    Ok(data)
 }

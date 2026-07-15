@@ -3,8 +3,9 @@ use uuid::Uuid;
 
 use crate::{
     config::response_config::AppError,
+    models::membership::Membership,
     repositories::{
-        membership::add_member,
+        membership::{add_member, all_members},
         organization::check_permission,
         user::{check_email, fnd_by_email},
     },
@@ -29,4 +30,13 @@ pub async fn add_member_services(
     add_member(pool, org_id, member_id).await?;
 
     Ok(())
+}
+
+pub async fn all_members_services(
+    pool: &PgPool,
+    org_id: Uuid,
+) -> Result<Vec<Membership>, AppError> {
+    let data = all_members(pool, org_id).await?;
+
+    Ok(data)
 }

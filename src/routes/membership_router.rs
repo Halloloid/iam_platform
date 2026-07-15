@@ -1,8 +1,11 @@
 use axum::{Router, routing::post};
 use sqlx::PgPool;
 
-use crate::handlers::membership::add_member_handler;
+use crate::handlers::membership::{add_member_handler, all_members_handler};
 
 pub fn membership_router() -> Router<PgPool> {
-    Router::new().route("/organization/{org_id}/member", post(add_member_handler))
+    Router::new().route(
+        "/organization/{org_id}/member",
+        post(add_member_handler).get(all_members_handler),
+    )
 }

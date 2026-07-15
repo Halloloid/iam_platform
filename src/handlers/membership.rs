@@ -10,7 +10,7 @@ use uuid::Uuid;
 use crate::{
     config::{auth_config::Claims, response_config::AppError},
     models::membership::AddMember,
-    services::membership::add_member_services,
+    services::membership::{add_member_services, all_members_services},
 };
 
 pub async fn add_member_handler(
@@ -25,5 +25,17 @@ pub async fn add_member_handler(
 
     Ok(Json(json!({
         "message":"Added new Member to The Organization"
+    })))
+}
+
+pub async fn all_members_handler(
+    State(pool): State<PgPool>,
+    Path(org_id): Path<Uuid>,
+    Extension(_): Extension<Claims>,
+) -> Result<impl IntoResponse, AppError> {
+    let data = all_members_services(&pool, org_id).await?;
+
+    Ok(Json(json!({
+        "data":data
     })))
 }
