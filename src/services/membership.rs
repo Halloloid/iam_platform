@@ -2,12 +2,8 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
-    config::response_config::AppError,
-    models::membership::Membership,
-    repositories::{
-        membership::{add_member, all_members},
-        organization::check_permission,
-        user::{check_email, fnd_by_email},
+    config::response_config::AppError, models::membership::Membership, repositories::{
+        membership::{add_member, all_members}, organization::check_permission, role::return_role, user::{check_email, fnd_by_email},
     },
 };
 
@@ -29,6 +25,26 @@ pub async fn add_member_services(
 
     add_member(pool, org_id, member_id).await?;
 
+    Ok(())
+}
+
+pub async fn remove_member_service(
+    pool: &PgPool,
+    user_id: Uuid,
+    member_id:Uuid,
+    org_id: Uuid
+) -> Result<(),AppError> {
+
+    if !check_permission(pool, user_id, org_id, "member:remove").await? 
+    || user_id == member_id{
+        return  Err(AppError::Forbidden)
+    }
+
+    if "Owner" == return_role(pool, org_id, member_id).await? {
+        return Err(AppError::Forbidden);
+    }
+
+    
     Ok(())
 }
 

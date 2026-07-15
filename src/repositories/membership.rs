@@ -28,3 +28,13 @@ pub async fn all_members(pool: &PgPool, org_id: Uuid) -> Result<Vec<Membership>,
 
     Ok(data)
 }
+
+pub async fn delete_member(
+    pool: &PgPool,
+    org_id: Uuid,
+    user_id:Uuid
+) -> Result<(),AppError> {
+
+    let tx = pool.begin().await.map_err(|_| AppError::Database)?;
+    Ok(())
+}
