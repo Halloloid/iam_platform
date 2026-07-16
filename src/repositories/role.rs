@@ -131,13 +131,19 @@ pub async fn delete_role(
 pub async fn return_role(
     pool: &Pool<Postgres>,
     org_id: Uuid,
-    user_id:Uuid
-) -> Result<String,AppError> {
+    user_id: Uuid,
+) -> Result<String, AppError> {
     let data = sqlx::query!(
-        "SELECT r.name FROM roles r INNER JOIN member_roles mr ON r.id = mr.role_id WHERE r.org_id = $1 AND mr.user_id = $2",
+        "SELECT r.name FROM roles r INNER JOIN member_roles mr ON r.id = mr.role_id WHERE mr.org_id = $1 AND mr.user_id = $2",
         org_id,
         user_id,
-    ).fetch_one(pool).await.map_err(|_| AppError::Database)?;
+    ).fetch_optional(pool).await.map_err(|e| {
+        tracing::error!("Failed to fetch Role:{:?}",e);
+        AppError::Database})?;
 
-    Ok(data.name)
+    if let Some(data) = data {
+        Ok(data.name)
+    } else {
+        Ok(String::from("No Role"))
+    }
 }

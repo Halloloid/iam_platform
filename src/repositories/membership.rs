@@ -29,12 +29,41 @@ pub async fn all_members(pool: &PgPool, org_id: Uuid) -> Result<Vec<Membership>,
     Ok(data)
 }
 
-pub async fn delete_member(
-    pool: &PgPool,
-    org_id: Uuid,
-    user_id:Uuid
-) -> Result<(),AppError> {
+pub async fn delete_member(pool: &PgPool, org_id: Uuid, user_id: Uuid) -> Result<(), AppError> {
+    let mut tx = pool.begin().await.map_err(|e| {
+        tracing::error!("Failed to create transaction:{:?}", e);
+        AppError::Database
+    })?;
 
-    let tx = pool.begin().await.map_err(|_| AppError::Database)?;
+    sqlx::query!(
+        "DELETE FROM member_roles WHERE user_id = $1 AND org_id = $2",
+        user_id,
+        org_id
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| {
+        tracing::error!("Failed to delete from member roles:{:?}", e);
+        AppError::Database
+    })?;
+
+    let rows = sqlx::query!(
+        "DELETE FROM membership WHERE user_id = $1 AND org_id = $2",
+        user_id,
+        org_id
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| {
+        tracing::error!("Failed to delete from Members : {:?}", e);
+        AppError::Database
+    })?;
+
+    if rows.rows_affected() == 0 {
+        return Err(AppError::NotFound);
+    }
+
+    tx.commit().await.map_err(|_| AppError::Database)?;
+
     Ok(())
 }
