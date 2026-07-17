@@ -2,13 +2,8 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
-    config::response_config::AppError,
-    models::membership::Membership,
-    repositories::{
-        membership::{add_member, all_members, delete_member},
-        organization::check_permission,
-        role::return_role,
-        user::{check_email, fnd_by_email},
+    config::response_config::AppError, models::membership::Membership, repositories::{
+        membership::{add_member, all_members, check_membership, delete_member}, organization::check_permission, role::{paticular_role, return_role}, user::{check_email, fnd_by_email},
     },
 };
 
@@ -68,4 +63,28 @@ pub async fn return_member_role_service(
     let role = return_role(pool, org_id, member_id).await?;
 
     Ok(role)
+}
+
+pub async fn assign_role_service(
+    pool: &PgPool,
+    org_id: Uuid,
+    user_id: Uuid,
+    member_id: Uuid,
+    role_id : Uuid
+) -> Result<(),AppError> {
+
+    if !check_permission(pool, user_id, org_id, "role:assign").await? {
+        return Err(AppError::Forbidden);
+    }
+
+    if !check_membership(pool, member_id, org_id).await? {
+        return Err(AppError::NotFound);
+    }
+
+    if paticular_role(pool, org_id, role_id).await?.is_none(){
+        return Err(AppError::NotFound);
+    }
+    
+
+    Ok(())
 }
