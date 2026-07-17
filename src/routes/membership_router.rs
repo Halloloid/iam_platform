@@ -5,7 +5,8 @@ use axum::{
 use sqlx::PgPool;
 
 use crate::handlers::membership::{
-    add_member_handler, all_members_handler, remove_member_handler, return_role_of_member_handler,
+    add_member_handler, all_members_handler, assign_role_handler, remove_member_handler,
+    return_role_of_member_handler,
 };
 
 pub fn membership_router() -> Router<PgPool> {
@@ -20,6 +21,6 @@ pub fn membership_router() -> Router<PgPool> {
         )
         .route(
             "/organization/{org_id}/member/{member_id}/role",
-            get(return_role_of_member_handler),
+            get(return_role_of_member_handler).post(assign_role_handler),
         )
 }

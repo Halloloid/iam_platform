@@ -68,18 +68,40 @@ pub async fn delete_member(pool: &PgPool, org_id: Uuid, user_id: Uuid) -> Result
     Ok(())
 }
 
-
 pub async fn check_membership(
     pool: &PgPool,
-    user_id:Uuid,
-    org_id: Uuid
-) -> Result<bool,AppError> {
+    user_id: Uuid,
+    org_id: Uuid,
+) -> Result<bool, AppError> {
     let res = sqlx::query!(
         "SELECT COUNT(*) as count FROM membership
         WHERE user_id = $1 AND org_id = $2",
         user_id,
         org_id
-    ).fetch_one(pool).await.map_err(|_| AppError::Database)?;
+    )
+    .fetch_one(pool)
+    .await
+    .map_err(|_| AppError::Database)?;
 
     Ok(res.count.unwrap_or(0) > 0)
+}
+
+pub async fn assign_role(
+    pool: &PgPool,
+    role_id: Uuid,
+    user_id: Uuid,
+    org_id: Uuid,
+) -> Result<(), AppError> {
+    sqlx::query!(
+        "INSERT INTO member_roles (user_id,org_id,role_id) VALUES ($1,$2,$3)
+        ON CONFLICT DO NOTHING",
+        user_id,
+        org_id,
+        role_id
+    )
+    .execute(pool)
+    .await
+    .map_err(|_| AppError::Database)?;
+
+    Ok(())
 }

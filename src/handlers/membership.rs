@@ -1,6 +1,7 @@
 use axum::{
     Extension, Json,
     extract::{Path, State},
+    http::StatusCode,
     response::IntoResponse,
 };
 use serde_json::json;
@@ -9,9 +10,9 @@ use uuid::Uuid;
 
 use crate::{
     config::{auth_config::Claims, response_config::AppError},
-    models::membership::AddMember,
+    models::{membership::AddMember, role::RoleId},
     services::membership::{
-        add_member_services, all_members_services, remove_member_service,
+        add_member_services, all_members_services, assign_role_service, remove_member_service,
         return_member_role_service,
     },
 };
@@ -65,4 +66,17 @@ pub async fn return_role_of_member_handler(
     Ok(Json(json!({
         "role":role
     })))
+}
+
+pub async fn assign_role_handler(
+    State(pool): State<PgPool>,
+    Extension(claims): Extension<Claims>,
+    Path((org_id, member_id)): Path<(Uuid, Uuid)>,
+    Json(role): Json<RoleId>,
+) -> Result<impl IntoResponse, AppError> {
+    let user_id = claims.sub;
+
+    assign_role_service(&pool, org_id, user_id, member_id, role.id).await?;
+
+    Ok((StatusCode::CREATED, Json("Role has Assigned")))
 }

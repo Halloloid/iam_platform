@@ -11,3 +11,8 @@ pub struct Role {
     pub id: Uuid,
     pub name: String,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct RoleId {
+    pub id: Uuid,
+}
