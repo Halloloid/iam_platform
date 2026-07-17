@@ -10,7 +10,10 @@ use uuid::Uuid;
 use crate::{
     config::{auth_config::Claims, response_config::AppError},
     models::membership::AddMember,
-    services::membership::{add_member_services, all_members_services, remove_member_service},
+    services::membership::{
+        add_member_services, all_members_services, remove_member_service,
+        return_member_role_service,
+    },
 };
 
 pub async fn add_member_handler(
@@ -50,4 +53,16 @@ pub async fn remove_member_handler(
     remove_member_service(&pool, user_id, member_id, org_id).await?;
 
     Ok(Json("Member has Removed From the Organization"))
+}
+
+pub async fn return_role_of_member_handler(
+    State(pool): State<PgPool>,
+    Extension(_): Extension<Claims>,
+    Path((org_id, member_id)): Path<(Uuid, Uuid)>,
+) -> Result<impl IntoResponse, AppError> {
+    let role = return_member_role_service(&pool, member_id, org_id).await?;
+
+    Ok(Json(json!({
+        "role":role
+    })))
 }

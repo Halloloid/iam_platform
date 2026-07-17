@@ -59,3 +59,13 @@ pub async fn all_members_services(
 
     Ok(data)
 }
+
+pub async fn return_member_role_service(
+    pool: &PgPool,
+    member_id: Uuid,
+    org_id: Uuid,
+) -> Result<String, AppError> {
+    let role = return_role(pool, org_id, member_id).await?;
+
+    Ok(role)
+}
