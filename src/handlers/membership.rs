@@ -12,8 +12,8 @@ use crate::{
     config::{auth_config::Claims, response_config::AppError},
     models::{membership::AddMember, role::RoleId},
     services::membership::{
-        add_member_services, all_members_services, assign_role_service, remove_member_service,
-        return_member_role_service,
+        add_member_services, all_members_services, assign_role_service, disassign_role_service,
+        remove_member_service, return_member_role_service,
     },
 };
 
@@ -79,4 +79,16 @@ pub async fn assign_role_handler(
     assign_role_service(&pool, org_id, user_id, member_id, role.id).await?;
 
     Ok((StatusCode::CREATED, Json("Role has Assigned")))
+}
+
+pub async fn disassign_role_handler(
+    State(pool): State<PgPool>,
+    Extension(claims): Extension<Claims>,
+    Path((org_id, member_id, role_id)): Path<(Uuid, Uuid, Uuid)>,
+) -> Result<impl IntoResponse, AppError> {
+    let user_id = claims.sub;
+
+    disassign_role_service(&pool, org_id, user_id, member_id, role_id).await?;
+
+    Ok(StatusCode::NO_CONTENT)
 }

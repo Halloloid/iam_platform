@@ -105,3 +105,22 @@ pub async fn assign_role(
 
     Ok(())
 }
+
+pub async fn disassign_role(
+    pool: &PgPool,
+    role_id: Uuid,
+    user_id: Uuid,
+    org_id: Uuid,
+) -> Result<(), AppError> {
+    sqlx::query!(
+        "DELETE FROM member_roles WHERE user_id = $1 AND role_id = $2 AND org_id = $3",
+        user_id,
+        role_id,
+        org_id
+    )
+    .execute(pool)
+    .await
+    .map_err(|_| AppError::Database)?;
+
+    Ok(())
+}
