@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO api_keys_scopes (api_key_id,permission_id) \n        SELECT $1, UNNEST($2::uuid[])\n        ON CONFLICT DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "UuidArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ced8ba038b984c124c228ea2c9ae4aa4b72000641458c39133ce4f305b837b69"
+}
