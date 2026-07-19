@@ -1,1 +1,37 @@
+use axum::{
+    Extension, Json,
+    extract::{Path, State},
+    response::IntoResponse,
+};
+use sqlx::PgPool;
+use uuid::Uuid;
+use validator::Validate;
 
+use crate::{
+    config::{auth_config::Claims, response_config::AppError},
+    models::api_key::CreateApiRequest,
+    services::api_key::create_api_key_service,
+};
+
+pub async fn create_api_key_handler(
+    State(pool): State<PgPool>,
+    Extension(claims): Extension<Claims>,
+    Path(org_id): Path<Uuid>,
+    Json(req): Json<CreateApiRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    let user_id = claims.sub;
+
+    req.validate().map_err(AppError::Validation)?;
+
+    let res = create_api_key_service(
+        &pool,
+        user_id,
+        org_id,
+        req.name,
+        req.permission_ids,
+        req.expires_in_dayes,
+    )
+    .await?;
+
+    Ok(Json(res))
+}

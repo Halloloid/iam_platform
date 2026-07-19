@@ -1,6 +1,11 @@
-use sqlx::{Pool, Postgres};
+use chrono::{DateTime, Utc};
+use sqlx::{PgPool, Pool, Postgres};
+use uuid::Uuid;
 
-use crate::config::{auth_config::ApiKeyRecord, response_config::AppError};
+use crate::{
+    config::{auth_config::ApiKeyRecord, response_config::AppError},
+    models::api_key::CreatedApiKey,
+};
 use sha2::{Digest, Sha256};
 
 pub async fn validate_api_key(
@@ -25,4 +30,40 @@ pub async fn validate_api_key(
         org_id: key.org_id,
         scopes,
     })
+}
+
+pub async fn new_api_key(
+    pool: &PgPool,
+    org_id: Uuid,
+    name: String,
+    key_hash: String,
+    permission_ids: Vec<Uuid>,
+    expires_at: DateTime<Utc>,
+) -> Result<CreatedApiKey, AppError> {
+    let mut tx = pool.begin().await.map_err(|_| AppError::Database)?;
+
+    let key = sqlx::query_as!(
+        CreatedApiKey,
+        "INSERT INTO api_keys (org_id,name,key_hash,expires_at) VALUES ($1,$2,$3,$4) RETURNING id,name,expires_at",
+        org_id,
+        name,
+        key_hash,
+        expires_at
+    ).fetch_one(&mut *tx)
+    .await.map_err(|_| AppError::Database)?;
+
+    sqlx::query!(
+        "INSERT INTO api_keys_scopes (api_key_id,permission_id) 
+        SELECT $1, UNNEST($2::uuid[])
+        ON CONFLICT DO NOTHING",
+        key.id,
+        &permission_ids as &[Uuid]
+    )
+    .execute(&mut *tx)
+    .await
+    .map_err(|_| AppError::Database)?;
+
+    tx.commit().await.map_err(|_| AppError::Database)?;
+
+    Ok(key)
 }
