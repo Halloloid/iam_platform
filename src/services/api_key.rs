@@ -6,8 +6,11 @@ use uuid::Uuid;
 
 use crate::{
     config::response_config::AppError,
-    models::api_key::CreateApiKeyResponse,
-    repositories::{api_key::new_api_key, organization::check_permission},
+    models::api_key::{ApiKeyListItem, CreateApiKeyResponse},
+    repositories::{
+        api_key::{fetch_api_keys, new_api_key},
+        organization::check_permission,
+    },
 };
 
 fn genrate_raw_key() -> String {
@@ -46,4 +49,16 @@ pub async fn create_api_key_service(
         raw_key,
         expires_at: created.expires_at,
     })
+}
+
+pub async fn all_api_keys_service(
+    pool: &PgPool,
+    user_id: Uuid,
+    org_id: Uuid,
+) -> Result<Vec<ApiKeyListItem>, AppError> {
+    if !check_permission(pool, user_id, org_id, "api_key:read").await? {
+        return Err(AppError::Forbidden);
+    }
+
+    fetch_api_keys(pool, org_id).await
 }

@@ -3,6 +3,7 @@ use axum::{
     extract::{Path, State},
     response::IntoResponse,
 };
+use serde_json::json;
 use sqlx::PgPool;
 use uuid::Uuid;
 use validator::Validate;
@@ -10,7 +11,7 @@ use validator::Validate;
 use crate::{
     config::{auth_config::Claims, response_config::AppError},
     models::api_key::CreateApiRequest,
-    services::api_key::create_api_key_service,
+    services::api_key::{all_api_keys_service, create_api_key_service},
 };
 
 pub async fn create_api_key_handler(
@@ -34,4 +35,18 @@ pub async fn create_api_key_handler(
     .await?;
 
     Ok(Json(res))
+}
+
+pub async fn all_api_keys_handler(
+    State(pool): State<PgPool>,
+    Extension(claims): Extension<Claims>,
+    Path(org_id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let user_id = claims.sub;
+
+    let keys = all_api_keys_service(&pool, user_id, org_id).await?;
+
+    Ok(Json(json!({
+    "data":keys
+    })))
 }

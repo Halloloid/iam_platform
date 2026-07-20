@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::{
     config::{auth_config::ApiKeyRecord, response_config::AppError},
-    models::api_key::CreatedApiKey,
+    models::api_key::{ApiKeyListItem, CreatedApiKey},
 };
 use sha2::{Digest, Sha256};
 
@@ -66,4 +66,32 @@ pub async fn new_api_key(
     tx.commit().await.map_err(|_| AppError::Database)?;
 
     Ok(key)
+}
+
+pub async fn fetch_api_keys(pool: &PgPool, org_id: Uuid) -> Result<Vec<ApiKeyListItem>, AppError> {
+    let data = sqlx::query!(
+        "SELECT ak.id,ak.name,ak.expires_at,ak.is_deleted,
+        ARRAY_AGG(p.name) FILTER (WHERE p.name IS NOT NULL) as scopes
+        FROM api_keys ak
+        LEFT JOIN api_keys_scopes aks ON aks.api_key_id = ak.id
+        LEFT JOIN permissions p ON p.id = aks.permission_id
+        WHERE ak.org_id = $1
+        GROUP BY ak.id,ak.name,ak.expires_at,ak.is_deleted
+        ORDER BY ak.expires_at DESC",
+        org_id
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|_| AppError::Database)?
+    .into_iter()
+    .map(|r| ApiKeyListItem {
+        id: r.id,
+        name: r.name,
+        expires_at: r.expires_at,
+        is_deleted: r.is_deleted,
+        scopes: r.scopes.unwrap_or_default(),
+    })
+    .collect::<Vec<_>>();
+
+    Ok(data)
 }

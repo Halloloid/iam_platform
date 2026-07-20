@@ -29,3 +29,12 @@ pub struct CreateApiRequest {
 
     pub expires_in_dayes: Option<i64>,
 }
+
+#[derive(Serialize)]
+pub struct ApiKeyListItem {
+    pub id: Uuid,
+    pub name: String,
+    pub expires_at: DateTime<Utc>,
+    pub is_deleted: bool,
+    pub scopes: Vec<String>,
+}
