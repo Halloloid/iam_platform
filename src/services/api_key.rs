@@ -8,7 +8,7 @@ use crate::{
     config::response_config::AppError,
     models::api_key::{ApiKeyListItem, CreateApiKeyResponse},
     repositories::{
-        api_key::{fetch_api_keys, new_api_key},
+        api_key::{fetch_api_keys, new_api_key, revoke_api_key},
         organization::check_permission,
     },
 };
@@ -61,4 +61,17 @@ pub async fn all_api_keys_service(
     }
 
     fetch_api_keys(pool, org_id).await
+}
+
+pub async fn delete_api_keys(
+    user_id: Uuid,
+    pool: &PgPool,
+    key_id: Uuid,
+    org_id: Uuid,
+) -> Result<(), AppError> {
+    if !check_permission(pool, user_id, org_id, "api_key:delete").await? {
+        return Err(AppError::Forbidden);
+    }
+
+    revoke_api_key(pool, key_id, org_id).await
 }

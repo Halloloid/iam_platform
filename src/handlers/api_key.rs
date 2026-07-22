@@ -1,6 +1,7 @@
 use axum::{
     Extension, Json,
     extract::{Path, State},
+    http::StatusCode,
     response::IntoResponse,
 };
 use serde_json::json;
@@ -11,7 +12,7 @@ use validator::Validate;
 use crate::{
     config::{auth_config::Claims, response_config::AppError},
     models::api_key::CreateApiRequest,
-    services::api_key::{all_api_keys_service, create_api_key_service},
+    services::api_key::{all_api_keys_service, create_api_key_service, delete_api_keys},
 };
 
 pub async fn create_api_key_handler(
@@ -49,4 +50,16 @@ pub async fn all_api_keys_handler(
     Ok(Json(json!({
     "data":keys
     })))
+}
+
+pub async fn delete_api_key_handler(
+    State(pool): State<PgPool>,
+    Extension(claims): Extension<Claims>,
+    Path((org_id, key_id)): Path<(Uuid, Uuid)>,
+) -> Result<impl IntoResponse, AppError> {
+    let user_id = claims.sub;
+
+    delete_api_keys(user_id, &pool, key_id, org_id).await?;
+
+    Ok(StatusCode::NO_CONTENT)
 }

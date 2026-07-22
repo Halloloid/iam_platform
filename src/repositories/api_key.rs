@@ -95,3 +95,19 @@ pub async fn fetch_api_keys(pool: &PgPool, org_id: Uuid) -> Result<Vec<ApiKeyLis
 
     Ok(data)
 }
+
+pub async fn revoke_api_key(pool: &PgPool, key_id: Uuid, org_id: Uuid) -> Result<(), AppError> {
+    let res = sqlx::query!(
+        "UPDATE api_keys SET is_deleted = true WHERE id = $1 AND org_id = $2 AND is_deleted = false",
+        key_id,
+        org_id
+    ).execute(pool)
+    .await
+    .map_err(|_| AppError::Database)?;
+
+    if res.rows_affected() == 0 {
+        return Err(AppError::NotFound);
+    }
+
+    Ok(())
+}
