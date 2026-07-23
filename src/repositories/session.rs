@@ -110,26 +110,28 @@ pub async fn revoke_session(pool: &Pool<Postgres>, refresh_token: String) -> Res
     Ok(())
 }
 
-pub async fn fetch_user_sessions(
-    user_id:Uuid,
-    pool: &PgPool
-) -> Result<Vec<Session>,AppError>{
+pub async fn fetch_user_sessions(user_id: Uuid, pool: &PgPool) -> Result<Vec<Session>, AppError> {
     let rec = sqlx::query!(
         "SELECT id,device,ip,created_at,expires_at,is_revoked
         FROM sessions WHERE user_id =$1 AND expires_at > NOW()
          ORDER BY created_at DESC",
-         user_id
-    ).fetch_all(pool).await.map_err(|_| AppError::Database)?;
+        user_id
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|_| AppError::Database)?;
 
-    let data :Vec<Session> = rec.iter().map(|x| Session{
-        id: x.id,
-        device: x.device.to_string(),
-        ip: x.ip.to_string(),
-        created_at: x.created_at,
-        expires_at: x.expires_at,
-        is_revoked: x.is_revoked,
-    }).collect();
+    let data: Vec<Session> = rec
+        .iter()
+        .map(|x| Session {
+            id: x.id,
+            device: x.device.to_string(),
+            ip: x.ip.to_string(),
+            created_at: x.created_at,
+            expires_at: x.expires_at,
+            is_revoked: x.is_revoked,
+        })
+        .collect();
 
     Ok(data)
 }
-
