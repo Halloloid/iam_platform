@@ -17,7 +17,7 @@ use crate::{
         user::{Create, LoginReq, LoginRes, UpdateProfile},
     },
     repositories::{
-        session::revoke_session,
+        session::revoke_session_by_refersh_token,
         user::{fnd_by_user_id, update_user},
     },
     services,
@@ -80,7 +80,7 @@ pub async fn logout(
     State(pool): State<PgPool>,
     Json(req): Json<ReqToken>,
 ) -> Result<Json<Value>, AppError> {
-    revoke_session(&pool, req.refresh_token).await?;
+    revoke_session_by_refersh_token(&pool, req.refresh_token).await?;
 
     Ok(Json(json!(
     {

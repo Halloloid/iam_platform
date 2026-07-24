@@ -4,7 +4,7 @@ use uuid::Uuid;
 use crate::{
     config::response_config::AppError,
     models::session::SessionResponse,
-    repositories::session::{fetch_user_sessions, find_active_session},
+    repositories::session::{fetch_user_sessions, find_active_session, revoke_session_by_id},
 };
 
 pub async fn list_sessions(
@@ -32,4 +32,14 @@ pub async fn list_sessions(
             is_revoked: x.is_revoked,
         })
         .collect())
+}
+
+pub async fn revoke_session_service(
+    pool: &PgPool,
+    user_id: Uuid,
+    session_id: Uuid,
+) -> Result<(), AppError> {
+    revoke_session_by_id(session_id, user_id, pool).await?;
+
+    Ok(())
 }

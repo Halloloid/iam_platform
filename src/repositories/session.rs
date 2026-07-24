@@ -98,7 +98,10 @@ pub async fn fnd_by_refresh_token(
     Err(AppError::Unauthorized)
 }
 
-pub async fn revoke_session(pool: &Pool<Postgres>, refresh_token: String) -> Result<(), AppError> {
+pub async fn revoke_session_by_refersh_token(
+    pool: &Pool<Postgres>,
+    refresh_token: String,
+) -> Result<(), AppError> {
     sqlx::query!(
         "
         UPDATE sessions SET is_revoked=true WHERE refresh_token=$1",
@@ -134,4 +137,22 @@ pub async fn fetch_user_sessions(user_id: Uuid, pool: &PgPool) -> Result<Vec<Ses
         .collect();
 
     Ok(data)
+}
+
+pub async fn revoke_session_by_id(
+    session_id: Uuid,
+    user_id: Uuid,
+    pool: &PgPool,
+) -> Result<(), AppError> {
+    let res = sqlx::query!(
+        "UPDATE sessions SET is_revoked = true WHERE id = $1 AND user_id = $2 AND is_revoked = false",
+        session_id,
+        user_id
+    ).execute(pool).await.map_err(|_| AppError::Database)?;
+
+    if res.rows_affected() == 0 {
+        return Err(AppError::NotFound);
+    }
+
+    Ok(())
 }
