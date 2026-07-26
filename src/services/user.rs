@@ -12,7 +12,11 @@ use crate::{
     models::user::{Create, LoginReq, LoginRes},
     repositories::{
         self,
-        session::{creat_session, find_active_session, fnd_by_refresh_token, update_session},
+        audit_logs::write_audit_logs,
+        session::{
+            creat_session, find_active_session, fnd_by_refresh_token,
+            revoke_session_by_refersh_token, update_session,
+        },
         user::{check_email, fnd_by_email},
     },
 };
@@ -55,6 +59,8 @@ pub async fn login(
 
         let access_token = create_token(user_id)?;
 
+        let _ = write_audit_logs(pool, "user:login", user_id, &format!("user:{}", user_id)).await;
+
         return Ok(LoginRes {
             access_token,
             refresh_token,
@@ -76,9 +82,27 @@ pub async fn refresh(pool: &Pool<Postgres>, req: String, ip: IpAddr) -> Result<L
 
     let access_token = create_token(user_id)?;
 
+    let _ = write_audit_logs(
+        pool,
+        "user:token_refresh",
+        user_id,
+        &format!("session:{}", sid),
+    )
+    .await;
+
     Ok(LoginRes {
         access_token,
         refresh_token,
         expires_in: 900,
     })
+}
+
+pub async fn logout(pool: &Pool<Postgres>, refresh_token: String) -> Result<(), AppError> {
+    revoke_session_by_refersh_token(pool, refresh_token.clone()).await?;
+
+    let (sid, user_id) = fnd_by_refresh_token(pool, refresh_token).await?;
+
+    let _ = write_audit_logs(pool, "user:logout", user_id, &format!("session:{}", sid)).await;
+
+    Ok(())
 }
