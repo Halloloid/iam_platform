@@ -5,6 +5,7 @@ use crate::{
     config::response_config::AppError,
     models::membership::Membership,
     repositories::{
+        audit_logs::write_audit_logs,
         membership::{
             add_member, all_members, assign_role, check_membership, delete_member, disassign_role,
         },
@@ -32,6 +33,14 @@ pub async fn add_member_services(
 
     add_member(pool, org_id, member_id).await?;
 
+    let _ = write_audit_logs(
+        pool,
+        "member:added",
+        user_id,
+        &format!("organization:{}/user:{}", org_id, user_id),
+    )
+    .await;
+
     Ok(())
 }
 
@@ -50,6 +59,15 @@ pub async fn remove_member_service(
     }
 
     delete_member(pool, org_id, member_id).await?;
+
+    let _ = write_audit_logs(
+        pool,
+        "member:removed",
+        user_id,
+        &format!("organization:{}/user:{}", org_id, user_id),
+    )
+    .await;
+
     Ok(())
 }
 

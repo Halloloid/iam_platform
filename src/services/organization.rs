@@ -4,9 +4,15 @@ use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
 use crate::{
-    config::response_config::AppError, models::organization::{ListOrgsRes, Organization}, repositories::{audit_logs::write_audit_logs, organization::{
-        all_organizations_asc, all_organizations_desc, check_permission, one_org, update_org_name,
-    }},
+    config::response_config::AppError,
+    models::organization::{ListOrgsRes, Organization},
+    repositories::{
+        audit_logs::write_audit_logs,
+        organization::{
+            all_organizations_asc, all_organizations_desc, check_permission, one_org,
+            update_org_name,
+        },
+    },
 };
 
 fn encode_cursor(created_at: DateTime<Utc>) -> String {
@@ -80,9 +86,15 @@ pub async fn update_org_service(
         return Err(AppError::Forbidden);
     }
 
-    let _ = write_audit_logs(pool, "organization:updated", org_id,&format!("organization:{}",org_id)).await;
-
     update_org_name(org_id, name, pool).await?;
+
+    let _ = write_audit_logs(
+        pool,
+        "organization:updated",
+        org_id,
+        &format!("organization:{}", org_id),
+    )
+    .await;
 
     Ok(())
 }
