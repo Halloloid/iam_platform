@@ -37,7 +37,7 @@ pub async fn add_member_services(
         pool,
         "member:added",
         user_id,
-        &format!("organization:{}/user:{}", org_id, user_id),
+        &format!("organization:{}/member:{}", org_id, member_id),
     )
     .await;
 
@@ -64,7 +64,7 @@ pub async fn remove_member_service(
         pool,
         "member:removed",
         user_id,
-        &format!("organization:{}/user:{}", org_id, user_id),
+        &format!("organization:{}/member:{}", org_id, member_id),
     )
     .await;
 
