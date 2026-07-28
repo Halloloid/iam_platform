@@ -2,11 +2,8 @@ use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
 use crate::{
-    config::response_config::AppError,
-    models::role::Role,
-    repositories::{
-        organization::check_permission,
-        role::{
+    config::response_config::AppError, models::role::Role, repositories::{
+        audit_logs::write_audit_logs, organization::check_permission, role::{
             all_roles, check_role_in_use, create_role, delete_role, paticular_role, role_exists,
             update_role,
         },
@@ -29,7 +26,9 @@ pub async fn create_role_service(
         return Err(AppError::Conflict(String::from("This Role Already Exists")));
     }
 
-    create_role(pool, org_id, name).await?;
+    create_role(pool, org_id, name.clone()).await?;
+
+    let _ = write_audit_logs(pool, "role:created", user_id, &format!("organization:{}/role:{}",org_id,name)).await;
 
     Ok(())
 }
@@ -59,11 +58,15 @@ pub async fn update_role_service(
         if role.name == "Owner" {
             return Err(AppError::Forbidden);
         } else {
-            update_role(pool, org_id, id, name).await?;
+            update_role(pool, org_id, id, name.clone()).await?;
+
+            let _ = write_audit_logs(pool, "role:updated", user_id, &format!("organization:{}/role:{}",org_id,name)).await;
         }
     } else {
         return Err(AppError::NotFound);
     }
+
+    
 
     Ok(())
 }
@@ -90,6 +93,8 @@ pub async fn delete_role_service(
                 return Err(AppError::Conflict(String::from("Role is in Use")));
             } else {
                 delete_role(pool, org_id, id).await?;
+
+                let _ = write_audit_logs(pool, "role:deleted", user_id, &format!("organization:{}/role:{}",org_id,role.name)).await;
             }
         }
     } else {
