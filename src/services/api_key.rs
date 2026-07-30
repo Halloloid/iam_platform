@@ -9,6 +9,7 @@ use crate::{
     models::api_key::{ApiKeyListItem, CreateApiKeyResponse},
     repositories::{
         api_key::{fetch_api_keys, new_api_key, revoke_api_key},
+        audit_logs::write_audit_logs,
         organization::check_permission,
     },
 };
@@ -41,7 +42,23 @@ pub async fn create_api_key_service(
 
     let expires_at = Utc::now() + chrono::Duration::days(api_expires_at.unwrap_or(30));
 
-    let created = new_api_key(pool, org_id, api_name, hash_key, permission_ids, expires_at).await?;
+    let created = new_api_key(
+        pool,
+        org_id,
+        api_name.clone(),
+        hash_key,
+        permission_ids,
+        expires_at,
+    )
+    .await?;
+
+    let _ = write_audit_logs(
+        pool,
+        "api_key:created",
+        user_id,
+        &format!("organization:{}/api_key:{}", org_id, api_name),
+    )
+    .await;
 
     Ok(CreateApiKeyResponse {
         id: created.id,
@@ -73,5 +90,15 @@ pub async fn delete_api_keys(
         return Err(AppError::Forbidden);
     }
 
-    revoke_api_key(pool, key_id, org_id).await
+    revoke_api_key(pool, key_id, org_id).await?;
+
+    let _ = write_audit_logs(
+        pool,
+        "api_key:revoked",
+        user_id,
+        &format!("organization:{}/api_key:{}", org_id, key_id),
+    )
+    .await;
+
+    Ok(())
 }

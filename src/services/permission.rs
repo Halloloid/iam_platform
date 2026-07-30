@@ -2,10 +2,15 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
-    config::response_config::AppError, models::permission::Permission, repositories::{
-        audit_logs::write_audit_logs, organization::check_permission, permission::{
+    config::response_config::AppError,
+    models::permission::Permission,
+    repositories::{
+        audit_logs::write_audit_logs,
+        organization::check_permission,
+        permission::{
             all_permissions, assign_permission, delete_permission_of_role, role_permission,
-        }, role::paticular_role,
+        },
+        role::paticular_role,
     },
 };
 
@@ -38,7 +43,16 @@ pub async fn assign_permissions_service(
 
     assign_permission(pool, permission_ids.clone(), role_id).await?;
 
-    let _ = write_audit_logs(pool, "permission:assigned", user_id, &format!("organization:{}/role:{}/permission:{:#?}",org_id,role_id,permission_ids)).await;
+    let _ = write_audit_logs(
+        pool,
+        "permission:assigned",
+        user_id,
+        &format!(
+            "organization:{}/role:{}/permission:{:#?}",
+            org_id, role_id, permission_ids
+        ),
+    )
+    .await;
 
     Ok(())
 }
@@ -80,6 +94,15 @@ pub async fn delete_permission_of_role_service(
 
     delete_permission_of_role(pool, permission_ids.clone(), role_id).await?;
 
-    let _ = write_audit_logs(pool, "permission:removed", user_id, &format!("organization:{}/role:{}/permission:{:#?}",org_id,role_id,permission_ids)).await;
+    let _ = write_audit_logs(
+        pool,
+        "permission:removed",
+        user_id,
+        &format!(
+            "organization:{}/role:{}/permission:{:#?}",
+            org_id, role_id, permission_ids
+        ),
+    )
+    .await;
     Ok(())
 }
