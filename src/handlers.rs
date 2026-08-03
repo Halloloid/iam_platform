@@ -1,4 +1,5 @@
 pub mod api_key;
+pub mod audit_logs;
 pub mod health;
 pub mod membership;
 pub mod organization;

@@ -1,4 +1,5 @@
 pub mod api_keys_router;
+pub mod audit_logs;
 pub mod main_router;
 pub mod membership_router;
 pub mod organization_router;

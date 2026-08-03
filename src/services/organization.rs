@@ -1,5 +1,3 @@
-use base64::{Engine, engine::general_purpose};
-use chrono::{DateTime, Utc};
 use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
@@ -13,23 +11,8 @@ use crate::{
             update_org_name,
         },
     },
+    services::service_helper::{decode_cursor, encode_cursor},
 };
-
-fn encode_cursor(created_at: DateTime<Utc>) -> String {
-    general_purpose::STANDARD.encode(created_at.to_rfc3339())
-}
-
-fn decode_cursor(cursor: &str) -> Result<DateTime<Utc>, AppError> {
-    let bytes = general_purpose::STANDARD
-        .decode(cursor)
-        .map_err(|_| AppError::BadRequest(String::from("")))?;
-
-    let s = String::from_utf8(bytes).map_err(|_| AppError::BadRequest(String::from("")))?;
-
-    DateTime::parse_from_rfc3339(&s)
-        .map(|dt| dt.with_timezone(&Utc))
-        .map_err(|_| AppError::BadRequest(String::from("")))
-}
 
 pub async fn all_org_service(
     user_id: Uuid,

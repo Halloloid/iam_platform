@@ -1,7 +1,8 @@
+use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::config::response_config::AppError;
+use crate::{config::response_config::AppError, models::audit_logs::AuditLogs};
 
 pub async fn write_audit_logs(
     pool: &PgPool,
@@ -20,4 +21,52 @@ pub async fn write_audit_logs(
     .map_err(|_| AppError::Database)?;
 
     Ok(())
+}
+
+pub async fn specific_logs_asc(
+    pool: &PgPool,
+    actor_id: Uuid,
+    cursor: Option<DateTime<Utc>>,
+    limit: i64,
+) -> Result<Vec<AuditLogs>, AppError> {
+    let data = sqlx::query_as!(
+        AuditLogs,
+        "SELECT id,actor_id,action,resource,timestamp FROM audit_logs WHERE
+        actor_id = $1
+        AND ($2::timestamptz IS NULL OR timestamp > $2)
+        ORDER BY timestamp ASC
+        LIMIT $3",
+        actor_id,
+        cursor,
+        limit
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|_| AppError::Database)?;
+
+    Ok(data)
+}
+
+pub async fn specific_logs_desc(
+    pool: &PgPool,
+    actor_id: Uuid,
+    cursor: Option<DateTime<Utc>>,
+    limit: i64,
+) -> Result<Vec<AuditLogs>, AppError> {
+    let data = sqlx::query_as!(
+        AuditLogs,
+        "SELECT id,actor_id,action,resource,timestamp FROM audit_logs WHERE
+        actor_id = $1
+        AND ($2::timestamptz IS NULL OR timestamp > $2)
+        ORDER BY timestamp DESC
+        LIMIT $3",
+        actor_id,
+        cursor,
+        limit
+    )
+    .fetch_all(pool)
+    .await
+    .map_err(|_| AppError::Database)?;
+
+    Ok(data)
 }

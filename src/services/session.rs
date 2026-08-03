@@ -2,7 +2,12 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
-    config::response_config::AppError, models::session::SessionResponse, repositories::{audit_logs::write_audit_logs, session::{fetch_user_sessions, find_active_session, revoke_session_by_id}},
+    config::response_config::AppError,
+    models::session::SessionResponse,
+    repositories::{
+        audit_logs::write_audit_logs,
+        session::{fetch_user_sessions, find_active_session, revoke_session_by_id},
+    },
 };
 
 pub async fn list_sessions(
@@ -39,7 +44,13 @@ pub async fn revoke_session_service(
 ) -> Result<(), AppError> {
     revoke_session_by_id(session_id, user_id, pool).await?;
 
-    let _ = write_audit_logs(pool, "session:revoked", user_id, &format!("session:{}/user:{}",session_id,user_id)).await;
+    let _ = write_audit_logs(
+        pool,
+        "session:revoked",
+        user_id,
+        &format!("session:{}/user:{}", session_id, user_id),
+    )
+    .await;
 
     Ok(())
 }

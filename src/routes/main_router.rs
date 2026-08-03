@@ -8,9 +8,10 @@ use tower_http::trace::TraceLayer;
 use crate::{
     handlers::health,
     routes::{
-        api_keys_router::api_key_router, membership_router::membership_router,
-        organization_router::organization_router, permission::permission_router, role::role_router,
-        session::session_router, user_router::user_router,
+        api_keys_router::api_key_router, audit_logs::audit_logs_router,
+        membership_router::membership_router, organization_router::organization_router,
+        permission::permission_router, role::role_router, session::session_router,
+        user_router::user_router,
     },
 };
 use crate::{
@@ -34,6 +35,7 @@ pub fn main_router(pool: Pool<Postgres>) -> Router {
         .merge(membership_router())
         .merge(api_key_router())
         .merge(session_router())
+        .merge(audit_logs_router())
         .layer(middleware::from_fn_with_state(pool.clone(), auth));
 
     Router::new()
