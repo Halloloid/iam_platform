@@ -100,7 +100,7 @@ pub async fn all_organizations_desc(
         ON m.org_id = o.id 
         WHERE m.user_id = $1 
         AND o.is_deleted = false 
-        AND ($2::timestamptz IS NULL OR o.created_at > $2) 
+        AND ($2::timestamptz IS NULL OR o.created_at < $2) 
         ORDER BY o.created_at DESC
         LIMIT $3",
         user_id,

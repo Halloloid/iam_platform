@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT o.id,o.name,o.created_at FROM organizations o \n        INNER JOIN membership m \n        ON m.org_id = o.id \n        WHERE m.user_id = $1 \n        AND o.is_deleted = false \n        AND ($2::timestamptz IS NULL OR o.created_at > $2) \n        ORDER BY o.created_at DESC\n        LIMIT $3",
+  "query": "SELECT o.id,o.name,o.created_at FROM organizations o \n        INNER JOIN membership m \n        ON m.org_id = o.id \n        WHERE m.user_id = $1 \n        AND o.is_deleted = false \n        AND ($2::timestamptz IS NULL OR o.created_at < $2) \n        ORDER BY o.created_at DESC\n        LIMIT $3",
   "describe": {
     "columns": [
       {
@@ -50,5 +50,5 @@
       false
     ]
   },
-  "hash": "7d29ae952e6662576956def823ff3b71517e94ec4bc2c3daabf4c6dcd5155eec"
+  "hash": "5840654666b7fb5580b0cd003fd0d31eb6d203cbbb6fffac8346f9a681a915ca"
 }

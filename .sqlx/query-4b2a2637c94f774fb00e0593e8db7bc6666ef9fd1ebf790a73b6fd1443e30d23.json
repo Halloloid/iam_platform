@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id,actor_id,action,resource,timestamp FROM audit_logs WHERE\n        actor_id = $1\n        AND ($2::timestamptz IS NULL OR timestamp > $2)\n        ORDER BY timestamp DESC\n        LIMIT $3",
+  "query": "SELECT id,actor_id,action,resource,timestamp FROM audit_logs WHERE resource LIKE $1\n        AND ($2::timestamptz IS NULL OR timestamp < $2)\n        ORDER BY timestamp DESC\n        LIMIT $3",
   "describe": {
     "columns": [
       {
@@ -61,7 +61,7 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid",
+        "Text",
         "Timestamptz",
         "Int8"
       ]
@@ -74,5 +74,5 @@
       false
     ]
   },
-  "hash": "54b167536e47f767a2333f9c3e7372170b71563e2984ce5045caf20adacc9c40"
+  "hash": "4b2a2637c94f774fb00e0593e8db7bc6666ef9fd1ebf790a73b6fd1443e30d23"
 }
