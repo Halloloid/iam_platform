@@ -32,7 +32,7 @@ pub async fn auth(
 
     if token.starts_with("iam_") {
         let Ok(record) = validate_api_key(token, &pool).await else {
-            return Err(AppError::Database);
+            return Err(AppError::Unauthorized);
         };
 
         req.extensions_mut().insert(AuthContext::ApiKey(record));

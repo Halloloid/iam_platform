@@ -1,11 +1,8 @@
 pub mod api_key;
-pub mod api_key_scope;
 pub mod audit_logs;
-pub mod member_role;
 pub mod membership;
 pub mod organization;
 pub mod permission;
 pub mod role;
-pub mod role_permission;
 pub mod session;
 pub mod user;
