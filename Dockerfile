@@ -1,7 +1,7 @@
 # This File Tells Docker how to Build the app into image
 
 # Step-1 Using the Rust offical image to Build
-FROM rust:1.78-slim As builder
+FROM rust:latest AS builder
 
 WORKDIR /app
 
@@ -23,6 +23,9 @@ RUN rm src/main.rs
 # now copy the actual source code
 COPY src ./src
 COPY migrations ./migrations
+COPY .sqlx ./.sqlx
+
+ENV SQLX_OFFLINE=true
 
 # build the real binary 
 RUN touch src/main.rs && cargo build --release
