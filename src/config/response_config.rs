@@ -65,3 +65,19 @@ impl From<jsonwebtoken::errors::Error> for AppError {
         AppError::Unauthorized
     }
 }
+
+impl std::fmt::Debug  for AppError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::BadRequest(arg0) => f.debug_tuple("BadRequest").field(arg0).finish(),
+            Self::Unauthorized => write!(f, "Unauthorized"),
+            Self::Forbidden => write!(f, "Forbidden"),
+            Self::NotFound => write!(f, "NotFound"),
+            Self::Conflict(arg0) => f.debug_tuple("Conflict").field(arg0).finish(),
+            Self::Database => write!(f, "Database"),
+            Self::InternalServerError => write!(f, "InternalServerError"),
+            Self::PassWordHashErr(arg0) => f.debug_tuple("PassWordHashErr").field(arg0).finish(),
+            Self::Validation(arg0) => f.debug_tuple("Validation").field(arg0).finish(),
+        }
+    }
+}
