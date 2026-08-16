@@ -102,3 +102,57 @@ pub async fn delete_api_keys(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_api_key_has_iam_prefix() {
+        let key = genrate_raw_key();
+        assert!(key.starts_with("iam_"));
+    }
+
+    #[test]
+    fn test_api_key_minimum_length() {
+        let key = genrate_raw_key();
+        assert!(key.len() >= 68);
+    }
+
+    #[test]
+    fn test_two_genrate_keys_are_different() {
+        let k1 = genrate_raw_key();
+        let k2 = genrate_raw_key();
+
+        assert_ne!(k1, k2);
+    }
+
+    #[test]
+    fn test_hash_key_is_not_plain_test() {
+        let key = genrate_raw_key();
+        let hash = hash_key(&key);
+
+        assert_ne!(key, hash);
+    }
+
+    #[test]
+    fn test_same_key_produces_same_hash() {
+        let key = genrate_raw_key();
+
+        let h1 = hash_key(&key);
+        let h2 = hash_key(&key);
+
+        assert_eq!(h1, h2);
+    }
+
+    #[test]
+    fn test_different_key_produces_different_hashes() {
+        let k1 = genrate_raw_key();
+        let k2 = genrate_raw_key();
+
+        let h1 = hash_key(&k1);
+        let h2 = hash_key(&k2);
+
+        assert_ne!(h1, h2);
+    }
+}
