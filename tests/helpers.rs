@@ -66,7 +66,7 @@ pub async fn get_json(
 pub async fn register_and_login(app:Router,email:&str) -> String{
     post_json(
         app.clone(),
-       "auth/register",
+       "/auth/register",
        json!({
            "email":email,
            "password":"password123",
@@ -75,7 +75,7 @@ pub async fn register_and_login(app:Router,email:&str) -> String{
     ).await;
 
     let (_,body) = post_json(app.clone(),
-        "auth/login",
+        "/auth/login",
         json!({
             "email":email,
             "password":"password123"
