@@ -1,18 +1,18 @@
-use axum::{Router, body::Body, http::{Request, StatusCode}};
+use axum::{
+    Router,
+    body::Body,
+    http::{Request, StatusCode},
+};
 use serde_json::{Value, json};
 use sqlx::PgPool;
 use tower::ServiceExt;
 
 // App with test pool
-pub fn build_app(pool:PgPool) -> Router{
+pub fn build_app(pool: PgPool) -> Router {
     iam_platform::routes::main_router::main_router(pool)
 }
 
-pub async fn post_json(
-    app:Router,
-    path:&str,
-    body:Value
-) -> (StatusCode,Value){
+pub async fn post_json(app: Router, path: &str, body: Value) -> (StatusCode, Value) {
     let response = app
         .oneshot(
             Request::builder()
@@ -26,25 +26,21 @@ pub async fn post_json(
         .unwrap();
 
     let status = response.status();
-    let bytes = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let bytes = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
 
-    let json:Value = serde_json::from_slice(&bytes).unwrap_or(Value::Null);
+    let json: Value = serde_json::from_slice(&bytes).unwrap_or(Value::Null);
 
-    (status,json)
+    (status, json)
 }
 
-pub async fn get_json(
-    app:Router,
-    path:&str,
-    token:Option<&str>
-) -> (StatusCode,Value){
-    let mut builder = Request::builder()
-        .method("GET")
-        .uri(path);
+pub async fn get_json(app: Router, path: &str, token: Option<&str>) -> (StatusCode, Value) {
+    let mut builder = Request::builder().method("GET").uri(path);
 
-    if let Some(t) = token{
-        builder = builder.header("Authorization", format!("Bearer {}",t));
-    } 
+    if let Some(t) = token {
+        builder = builder.header("Authorization", format!("Bearer {}", t));
+    }
 
     let response = app
         .oneshot(builder.body(Body::empty()).unwrap())
@@ -57,30 +53,33 @@ pub async fn get_json(
         .await
         .unwrap();
 
-    let json:Value = serde_json::from_slice(&bytes).unwrap_or(Value::Null);
+    let json: Value = serde_json::from_slice(&bytes).unwrap_or(Value::Null);
 
-    (status,json)
+    (status, json)
 }
 
 // registering a user and returns a token - used in many tests
-pub async fn register_and_login(app:Router,email:&str) -> String{
+pub async fn register_and_login(app: Router, email: &str) -> String {
     post_json(
         app.clone(),
-       "/auth/register",
-       json!({
-           "email":email,
-           "password":"password123",
-           "name":"Test User"
-       })
-    ).await;
+        "/auth/register",
+        json!({
+            "email":email,
+            "password":"password123",
+            "name":"Test User"
+        }),
+    )
+    .await;
 
-    let (_,body) = post_json(app.clone(),
+    let (_, body) = post_json(
+        app.clone(),
         "/auth/login",
         json!({
             "email":email,
             "password":"password123"
-        })
-    ).await;
+        }),
+    )
+    .await;
 
     body["access_token"].as_str().unwrap().to_string()
 }

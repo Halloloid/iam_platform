@@ -72,7 +72,7 @@ mod tests {
     use super::*;
     use std::sync::Mutex;
 
-    static ENV_LOCK:Mutex<()> = Mutex::new(());
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
     //---Password Tests---
     #[test]
     fn test_hashed_password_return_hash() {
@@ -113,7 +113,7 @@ mod tests {
     fn test_create_and_verify_token() {
         let key = "JWT_SECRET";
         let _lock = ENV_LOCK.lock().unwrap();
-        
+
         unsafe {
             std::env::set_var(key, "test-secrect-key");
         }
@@ -130,7 +130,6 @@ mod tests {
     fn test_verify_invalid_token_fails() {
         let key = "JWT_SECRET";
         let _lock = ENV_LOCK.lock().unwrap();
-        
 
         unsafe {
             std::env::set_var(key, "test-secrect-key");
@@ -145,7 +144,6 @@ mod tests {
     fn test_verify_tamperd_token_fails() {
         let key = "JWT_SECRET";
         let _lock = ENV_LOCK.lock().unwrap();
-        
 
         unsafe {
             std::env::set_var(key, "test-secrect-key");
@@ -164,7 +162,6 @@ mod tests {
     fn test_token_with_wrong_secrect_fails() {
         let key = "JWT_SECRET";
         let _lock = ENV_LOCK.lock().unwrap();
-        
 
         unsafe {
             std::env::set_var(key, "test-secrect-key1");

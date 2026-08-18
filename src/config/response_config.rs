@@ -66,7 +66,7 @@ impl From<jsonwebtoken::errors::Error> for AppError {
     }
 }
 
-impl std::fmt::Debug  for AppError {
+impl std::fmt::Debug for AppError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::BadRequest(arg0) => f.debug_tuple("BadRequest").field(arg0).finish(),

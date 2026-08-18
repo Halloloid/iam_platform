@@ -1,4 +1,4 @@
-use axum::{http::StatusCode};
+use axum::http::StatusCode;
 use serde_json::json;
 use sqlx::PgPool;
 mod helpers;
@@ -6,21 +6,25 @@ mod helpers;
 // Register Tests ----------
 
 #[sqlx::test]
-async fn test_register_success(pool:PgPool){
+async fn test_register_success(pool: PgPool) {
     let app = helpers::build_app(pool);
 
-    let (status,_) = helpers::post_json(app, "/auth/register", json!({
-        "email":"test@123.com",
-        "password":"password123",
-        "name":"Test User"
-    })
-    ).await;
+    let (status, _) = helpers::post_json(
+        app,
+        "/auth/register",
+        json!({
+            "email":"test@123.com",
+            "password":"password123",
+            "name":"Test User"
+        }),
+    )
+    .await;
 
-    assert_eq!(status,StatusCode::CREATED);
+    assert_eq!(status, StatusCode::CREATED);
 }
 
 #[sqlx::test]
-async fn test_register_duplicate_emails_fails(pool:PgPool){
+async fn test_register_duplicate_emails_fails(pool: PgPool) {
     let app = helpers::build_app(pool);
 
     let payload = json!({
@@ -31,94 +35,124 @@ async fn test_register_duplicate_emails_fails(pool:PgPool){
 
     helpers::post_json(app.clone(), "/auth/register", payload.clone()).await;
 
-    let (status,_) = helpers::post_json(app, "/auth/register", payload.clone()).await;
+    let (status, _) = helpers::post_json(app, "/auth/register", payload.clone()).await;
 
-    assert_eq!(status,StatusCode::CONFLICT);
+    assert_eq!(status, StatusCode::CONFLICT);
 }
 
 #[sqlx::test]
-async fn test_register_invalid_email(pool:PgPool){
+async fn test_register_invalid_email(pool: PgPool) {
     let app = helpers::build_app(pool);
 
-    let (status,_) = helpers::post_json(app, "/auth/register", json!({
-        "email":"notavalidemail",
-        "password":"password@123",
-        "name":"Test User"
-    })).await;
+    let (status, _) = helpers::post_json(
+        app,
+        "/auth/register",
+        json!({
+            "email":"notavalidemail",
+            "password":"password@123",
+            "name":"Test User"
+        }),
+    )
+    .await;
 
-    assert_eq!(status,StatusCode::BAD_REQUEST);
+    assert_eq!(status, StatusCode::BAD_REQUEST);
 }
 
 // Login -----
 #[sqlx::test]
-async fn test_login_success(pool:PgPool){
+async fn test_login_success(pool: PgPool) {
     let app = helpers::build_app(pool);
 
-    helpers::post_json(app.clone(), "/auth/register", json!({
-        "email":"login@test.com",
-        "password":"password123",
-        "name":"Test User"
-    })).await;
+    helpers::post_json(
+        app.clone(),
+        "/auth/register",
+        json!({
+            "email":"login@test.com",
+            "password":"password123",
+            "name":"Test User"
+        }),
+    )
+    .await;
 
-    let (status,body) = helpers::post_json(app, "/auth/login", json!({
-        "email":"login@test.com",
-        "password":"password123"
-    })).await;
+    let (status, body) = helpers::post_json(
+        app,
+        "/auth/login",
+        json!({
+            "email":"login@test.com",
+            "password":"password123"
+        }),
+    )
+    .await;
 
-    assert_eq!(status,StatusCode::OK);
+    assert_eq!(status, StatusCode::OK);
     assert!(body["access_token"].is_string());
     assert!(body["refresh_token"].is_string());
 }
 
 #[sqlx::test]
-async fn test_login_wrong_password_fails(pool:PgPool){
+async fn test_login_wrong_password_fails(pool: PgPool) {
     let app = helpers::build_app(pool);
 
-    helpers::post_json(app.clone(), "/auth/register", json!({
-        "email":"login@test.com",
-        "password":"password123",
-        "name":"Test User"
-    })).await;
+    helpers::post_json(
+        app.clone(),
+        "/auth/register",
+        json!({
+            "email":"login@test.com",
+            "password":"password123",
+            "name":"Test User"
+        }),
+    )
+    .await;
 
-    let (status,_) = helpers::post_json(app, "/auth/login", json!({
-        "email":"login@test.com",
-        "password":"wrongpassword123"
-    })).await;
+    let (status, _) = helpers::post_json(
+        app,
+        "/auth/login",
+        json!({
+            "email":"login@test.com",
+            "password":"wrongpassword123"
+        }),
+    )
+    .await;
 
-    assert_eq!(status,StatusCode::UNAUTHORIZED);
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
 
 #[sqlx::test]
-async fn test_login_non_existent_user_fails(pool:PgPool){
+async fn test_login_non_existent_user_fails(pool: PgPool) {
     let app = helpers::build_app(pool);
 
-    let (status,_) = helpers::post_json(app, "/auth/login", json!({
-        "email":"nobody@test.com",
-        "password":"password123"
-    })).await;
+    let (status, _) = helpers::post_json(
+        app,
+        "/auth/login",
+        json!({
+            "email":"nobody@test.com",
+            "password":"password123"
+        }),
+    )
+    .await;
 
-    assert_eq!(status,StatusCode::UNAUTHORIZED);
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
 
 // Protected Routes--------
 
 #[sqlx::test]
-async fn test_get_me_without_token_fails(pool:PgPool){
+async fn test_get_me_without_token_fails(pool: PgPool) {
     let app = helpers::build_app(pool);
 
-    let (status,_) = helpers::get_json(app, "/user/me", None).await;
+    let (status, _) = helpers::get_json(app, "/user/me", None).await;
 
-    assert_eq!(status,StatusCode::UNAUTHORIZED);
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
 
 #[sqlx::test]
-async fn test_get_me_with_valid_token_succeeds(pool:PgPool){
+async fn test_get_me_with_valid_token_succeeds(pool: PgPool) {
     let app = helpers::build_app(pool);
 
     let token = helpers::register_and_login(app.clone(), "getme@test.com").await;
 
-    let (status,body) = helpers::get_json(app, "/user/me", Some(&token)).await;
+    let (status, body) = helpers::get_json(app, "/user/me", Some(&token)).await;
 
-    assert_eq!(status,StatusCode::OK);
-    assert_eq!(body["email"],"getme@test.com");
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["email"], "getme@test.com");
 }
