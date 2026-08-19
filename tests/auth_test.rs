@@ -9,8 +9,9 @@ mod helpers;
 async fn test_register_success(pool: PgPool) {
     let app = helpers::build_app(pool);
 
-    let (status, _) = helpers::post_json(
+    let (status, _) = helpers::request_json_no_auth(
         app,
+        "POST",
         "/auth/register",
         json!({
             "email":"test@123.com",
@@ -33,9 +34,9 @@ async fn test_register_duplicate_emails_fails(pool: PgPool) {
         "name":"Test User"
     });
 
-    helpers::post_json(app.clone(), "/auth/register", payload.clone()).await;
+    helpers::request_json_no_auth(app.clone(),"POST", "/auth/register", payload.clone()).await;
 
-    let (status, _) = helpers::post_json(app, "/auth/register", payload.clone()).await;
+    let (status, _) = helpers::request_json_no_auth(app, "POST","/auth/register", payload.clone()).await;
 
     assert_eq!(status, StatusCode::CONFLICT);
 }
@@ -44,8 +45,9 @@ async fn test_register_duplicate_emails_fails(pool: PgPool) {
 async fn test_register_invalid_email(pool: PgPool) {
     let app = helpers::build_app(pool);
 
-    let (status, _) = helpers::post_json(
+    let (status, _) = helpers::request_json_no_auth(
         app,
+        "POST",
         "/auth/register",
         json!({
             "email":"notavalidemail",
@@ -63,8 +65,9 @@ async fn test_register_invalid_email(pool: PgPool) {
 async fn test_login_success(pool: PgPool) {
     let app = helpers::build_app(pool);
 
-    helpers::post_json(
+    helpers::request_json_no_auth(
         app.clone(),
+        "POST",
         "/auth/register",
         json!({
             "email":"login@test.com",
@@ -74,8 +77,9 @@ async fn test_login_success(pool: PgPool) {
     )
     .await;
 
-    let (status, body) = helpers::post_json(
+    let (status, body) = helpers::request_json_no_auth(
         app,
+        "POST",
         "/auth/login",
         json!({
             "email":"login@test.com",
@@ -93,8 +97,8 @@ async fn test_login_success(pool: PgPool) {
 async fn test_login_wrong_password_fails(pool: PgPool) {
     let app = helpers::build_app(pool);
 
-    helpers::post_json(
-        app.clone(),
+    helpers::request_json_no_auth(
+        app.clone(),"POST",
         "/auth/register",
         json!({
             "email":"login@test.com",
@@ -104,8 +108,8 @@ async fn test_login_wrong_password_fails(pool: PgPool) {
     )
     .await;
 
-    let (status, _) = helpers::post_json(
-        app,
+    let (status, _) = helpers::request_json_no_auth(
+        app,"POST",
         "/auth/login",
         json!({
             "email":"login@test.com",
@@ -121,8 +125,8 @@ async fn test_login_wrong_password_fails(pool: PgPool) {
 async fn test_login_non_existent_user_fails(pool: PgPool) {
     let app = helpers::build_app(pool);
 
-    let (status, _) = helpers::post_json(
-        app,
+    let (status, _) = helpers::request_json_no_auth(
+        app,"POST",
         "/auth/login",
         json!({
             "email":"nobody@test.com",
