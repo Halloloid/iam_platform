@@ -84,3 +84,95 @@ async fn creater_becomes_member(pool: PgPool) {
     assert_eq!(status, StatusCode::OK);
     assert!(body["data"].as_array().unwrap().len() > 0);
 }
+
+#[sqlx::test]
+async fn test_creator_gets_owner_role(pool: PgPool) {
+    let app = common::build_app(pool);
+
+    let token = common::register_and_login(app.clone(), "owner@test.com").await;
+
+    let (_, org_body) = common::request_json_auth(
+        app.clone(),
+        json!({
+            "name":"Acme Inc"
+        }),
+        "POST",
+        "/organization",
+        &token,
+    )
+    .await;
+
+    let org_id = org_body["id"].as_str().unwrap();
+
+    let (status, body) = common::get_json(
+        app,
+        &format!("/organization/{}/role", org_id),
+        Some(&token),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+
+    let roles = body.as_array().unwrap();
+
+    let has_owner = roles.iter().any(|r| r["name"] == "Owner");
+
+    assert!(has_owner, "Owner Role Should be Created Automatically");
+}
+
+#[sqlx::test]
+async fn test_owner_has_all_permissions(pool: PgPool) {
+    let app = common::build_app(pool);
+
+    let token = common::register_and_login(app.clone(), "owner@test.com").await;
+
+    let (_, org_body) = common::request_json_auth(
+        app.clone(),
+        json!({
+            "name":"Acme Inc"
+        }),
+        "POST",
+        "/organization",
+        &token,
+    )
+    .await;
+
+    let org_id = org_body["id"].as_str().unwrap();
+
+    let (_, allperms) = common::get_json(app.clone(), "/permission", Some(&token)).await;
+
+    let total_permission = allperms["data"].as_array().unwrap().len();
+
+    let (_, roles_body) = common::get_json(
+        app.clone(),
+        &format!("/organization/{}/role", org_id),
+        Some(&token),
+    )
+    .await;
+
+    let owner_role = roles_body
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|r| r["name"] == "Owner")
+        .unwrap()
+        .clone();
+
+    let owner_role_id = owner_role["id"].as_str().unwrap();
+
+    let (status, perms_body) = common::get_json(
+        app,
+        &format!("/organization/{}/role/{}/permission", org_id, owner_role_id),
+        Some(&token),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+
+    let owner_permission = perms_body.as_array().unwrap().len();
+
+    assert_eq!(
+        owner_permission, total_permission,
+        "Owner Role Should have All Permission"
+    );
+}
