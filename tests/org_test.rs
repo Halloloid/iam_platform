@@ -176,3 +176,27 @@ async fn test_owner_has_all_permissions(pool: PgPool) {
         "Owner Role Should have All Permission"
     );
 }
+
+
+// Get Organization -------
+
+#[sqlx::test]
+async fn test_list_org_returns_only_user_org(pool: PgPool){
+    let app = common::build_app(pool);
+
+    let token1 = common::register_and_login(app.clone(), "user1@test.com").await;
+
+    common::request_json_auth(app.clone(), json!({"name":"ACME INC 1"}), "POST", "/organization", &token1).await;
+
+    let token2 = common::register_and_login(app.clone(), "user2@test.com").await;
+
+    common::request_json_auth(app.clone(), json!({"name":"ACME INC 2"}), "POST", "/organization", &token2).await;
+
+    let (status,body) = common::get_json(app, "/organization", Some(&token1)).await;
+
+    assert_eq!(status,StatusCode::OK);
+
+    let orgs = body["data"].as_array().unwrap();
+    assert_eq!(orgs.len(),1);
+    assert_eq!(orgs[0]["name"],"ACME INC 1");
+}
