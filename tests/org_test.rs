@@ -2,6 +2,8 @@ use axum::http::StatusCode;
 use serde_json::json;
 use sqlx::PgPool;
 
+use crate::common::register_and_login;
+
 mod common;
 
 // Organization Creation
@@ -104,12 +106,8 @@ async fn test_creator_gets_owner_role(pool: PgPool) {
 
     let org_id = org_body["id"].as_str().unwrap();
 
-    let (status, body) = common::get_json(
-        app,
-        &format!("/organization/{}/role", org_id),
-        Some(&token),
-    )
-    .await;
+    let (status, body) =
+        common::get_json(app, &format!("/organization/{}/role", org_id), Some(&token)).await;
 
     assert_eq!(status, StatusCode::OK);
 
@@ -177,26 +175,87 @@ async fn test_owner_has_all_permissions(pool: PgPool) {
     );
 }
 
-
 // Get Organization -------
 
 #[sqlx::test]
-async fn test_list_org_returns_only_user_org(pool: PgPool){
+async fn test_list_org_returns_only_user_org(pool: PgPool) {
     let app = common::build_app(pool);
 
     let token1 = common::register_and_login(app.clone(), "user1@test.com").await;
 
-    common::request_json_auth(app.clone(), json!({"name":"ACME INC 1"}), "POST", "/organization", &token1).await;
+    common::request_json_auth(
+        app.clone(),
+        json!({"name":"ACME INC 1"}),
+        "POST",
+        "/organization",
+        &token1,
+    )
+    .await;
 
     let token2 = common::register_and_login(app.clone(), "user2@test.com").await;
 
-    common::request_json_auth(app.clone(), json!({"name":"ACME INC 2"}), "POST", "/organization", &token2).await;
+    common::request_json_auth(
+        app.clone(),
+        json!({"name":"ACME INC 2"}),
+        "POST",
+        "/organization",
+        &token2,
+    )
+    .await;
 
-    let (status,body) = common::get_json(app, "/organization", Some(&token1)).await;
+    let (status, body) = common::get_json(app, "/organization", Some(&token1)).await;
 
-    assert_eq!(status,StatusCode::OK);
+    assert_eq!(status, StatusCode::OK);
 
     let orgs = body["data"].as_array().unwrap();
-    assert_eq!(orgs.len(),1);
-    assert_eq!(orgs[0]["name"],"ACME INC 1");
+    assert_eq!(orgs.len(), 1);
+    assert_eq!(orgs[0]["name"], "ACME INC 1");
+}
+
+// Update Organization ------
+#[sqlx::test]
+async fn test_update_org_name_success(pool: PgPool) {
+    let app = common::build_app(pool);
+
+    let token = common::register_and_login(app.clone(), "update@test.com").await;
+
+    let (_, org_body) = common::request_json_auth(
+        app.clone(),
+        json!({"name":"Acme Inc"}),
+        "POST",
+        "/organization",
+        &token,
+    )
+    .await;
+
+    let org_id = org_body["id"].as_str().unwrap();
+
+    let (status, _) = common::request_json_auth(
+        app,
+        json!({"name":"New Name"}),
+        "PATCH",
+        &format!("/organization/{}", org_id),
+        &token,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::NO_CONTENT);
+}
+
+
+#[sqlx::test]
+async fn test_update_org_without_permission_fails(pool: PgPool){
+    let app = common::build_app(pool);
+
+    let token1 = register_and_login(app.clone(), "user1@test.com").await;
+
+    let (_,org_body) = common::request_json_auth(app.clone(), json!({"name":"Company 1"}), "POST", "/organization", &token1).await;
+
+    let org_id = org_body["id"].as_str().unwrap();
+
+    let token2 = register_and_login(app.clone(), "user2@test.com").await;
+
+    let (status,_) = common::request_json_auth(app, json!({"name":"Company 2"}), "PATCH", &format!("/organization/{}",org_id), &token2).await;
+
+    assert_eq!(status,StatusCode::FORBIDDEN);
 }
