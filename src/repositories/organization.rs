@@ -30,7 +30,7 @@ pub async fn create_organization(
     .map_err(|_| AppError::Database)?;
 
     let role = sqlx::query!(
-        "INSERT INTO roles (name,org_id) VALUES ('Owner',$1) RETURNING id",
+        "INSERT INTO roles (name,org_id) VALUES ('owner',$1) RETURNING id",
         org.id
     )
     .fetch_one(&mut *transaction)

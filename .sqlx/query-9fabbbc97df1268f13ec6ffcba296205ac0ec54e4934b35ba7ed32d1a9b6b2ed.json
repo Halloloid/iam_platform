@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO roles (name,org_id) VALUES ('Owner',$1) RETURNING id",
+  "query": "INSERT INTO roles (name,org_id) VALUES ('owner',$1) RETURNING id",
   "describe": {
     "columns": [
       {
@@ -24,5 +24,5 @@
       false
     ]
   },
-  "hash": "b63ba09e93a3e5235bf1e35ca90b6bb7513890e5bb893eaa26d4e8788d5367e6"
+  "hash": "9fabbbc97df1268f13ec6ffcba296205ac0ec54e4934b35ba7ed32d1a9b6b2ed"
 }

@@ -54,7 +54,7 @@ pub async fn remove_member_service(
         return Err(AppError::Forbidden);
     }
 
-    if "Owner" == return_role(pool, org_id, member_id).await? {
+    if "owner" == return_role(pool, org_id, member_id).await? {
         return Err(AppError::Forbidden);
     }
 

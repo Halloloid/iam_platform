@@ -26,7 +26,7 @@ pub async fn create_role_service(
         return Err(AppError::Forbidden);
     }
 
-    if role_exists(pool, org_id, &name).await? {
+    if role_exists(pool, org_id, &name.to_lowercase()).await? {
         return Err(AppError::Conflict(String::from("This Role Already Exists")));
     }
 
@@ -65,7 +65,7 @@ pub async fn update_role_service(
     let role = paticular_role(pool, org_id, id).await?;
 
     if let Some(role) = role {
-        if role.name == "Owner" {
+        if role.name == "owner" {
             return Err(AppError::Forbidden);
         } else {
             update_role(pool, org_id, id, name.clone()).await?;
@@ -100,7 +100,7 @@ pub async fn delete_role_service(
     let role = paticular_role(pool, org_id, id).await?;
 
     if let Some(role) = role {
-        if role.name == "Owner" {
+        if role.name == "owner" {
             return Err(AppError::Forbidden);
         } else {
             if check_role_in_use(id, pool).await? {
