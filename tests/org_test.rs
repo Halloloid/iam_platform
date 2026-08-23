@@ -113,9 +113,9 @@ async fn test_creator_gets_owner_role(pool: PgPool) {
 
     let roles = body.as_array().unwrap();
 
-    let has_owner = roles.iter().any(|r| r["name"] == "Owner");
+    let has_owner = roles.iter().any(|r| r["name"] == "owner");
 
-    assert!(has_owner, "Owner Role Should be Created Automatically");
+    assert!(has_owner, "owner Role Should be Created Automatically");
 }
 
 #[sqlx::test]
@@ -152,7 +152,7 @@ async fn test_owner_has_all_permissions(pool: PgPool) {
         .as_array()
         .unwrap()
         .iter()
-        .find(|r| r["name"] == "Owner")
+        .find(|r| r["name"] == "owner")
         .unwrap()
         .clone();
 
@@ -171,7 +171,7 @@ async fn test_owner_has_all_permissions(pool: PgPool) {
 
     assert_eq!(
         owner_permission, total_permission,
-        "Owner Role Should have All Permission"
+        "owner Role Should have All Permission"
     );
 }
 

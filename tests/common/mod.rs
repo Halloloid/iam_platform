@@ -40,6 +40,7 @@ pub async fn request_json_no_auth(
     (status, json)
 }
 
+#[allow(dead_code)]
 pub async fn get_json(app: Router, path: &str, token: Option<&str>) -> (StatusCode, Value) {
     let mut builder = Request::builder().method("GET").uri(path);
 
