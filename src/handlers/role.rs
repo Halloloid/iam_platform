@@ -24,12 +24,13 @@ pub async fn create_role_handler(
 ) -> Result<impl IntoResponse, AppError> {
     let user_id = claims.sub;
 
-    create_role_service(&pool, user_id, name.name, org_id).await?;
+    let id = create_role_service(&pool, user_id, name.name, org_id).await?;
 
     Ok((
         StatusCode::CREATED,
         Json(json!({
-            "message":"New Role Created"
+            "message":"New Role Created",
+            "id":id
         })),
     ))
 }

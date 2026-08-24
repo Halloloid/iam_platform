@@ -7,17 +7,18 @@ pub async fn create_role(
     pool: &Pool<Postgres>,
     org_id: Uuid,
     name: String,
-) -> Result<(), AppError> {
-    sqlx::query!(
-        "INSERT INTO roles (name,org_id) VALUES ($1,$2)",
+) -> Result<Uuid, AppError> {
+    let id = sqlx::query!(
+        "INSERT INTO roles (name,org_id) VALUES ($1,$2)
+        RETURNING id",
         name.to_lowercase(),
         org_id
     )
-    .execute(pool)
+    .fetch_one(pool)
     .await
     .map_err(|_| AppError::Database)?;
 
-    Ok(())
+    Ok(id.id)
 }
 
 pub async fn role_exists(

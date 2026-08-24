@@ -133,3 +133,65 @@ async fn test_get_roles_include_owner(pool: PgPool) {
 // }
 
 //Update Role-----------
+#[sqlx::test]
+async fn test_rename_role_success(pool: PgPool) {
+    let (app, token, org_id) = setup_org(pool, "rename_role@test.com").await;
+
+    let (_, role_body) = common::request_json_auth(
+        app.clone(),
+        json!({"name":"Manager"}),
+        "POST",
+        &format!("/organization/{}/role", org_id),
+        &token,
+    )
+    .await;
+
+    let role_id = role_body["id"].as_str().unwrap();
+
+    let (status, body) = common::request_json_auth(
+        app,
+        json!({"name":"Senior Manager"}),
+        "PATCH",
+        &format!("/organization/{}/role/{}", org_id, role_id),
+        &token,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert!(body["message"].is_string());
+}
+
+#[sqlx::test]
+async fn test_rename_owner_role_fails(pool: PgPool) {
+    let (app, token, org_id) = setup_org(pool, "rename_owner@test.com").await;
+
+    let (_, role_body) = common::get_json(
+        app.clone(),
+        &format!("/organization/{}/role", org_id),
+        Some(&token),
+    )
+    .await;
+
+    let owner_role_id = role_body
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|r| r["name"] == "owner")
+        .unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+
+    let (status, _) = common::request_json_auth(
+        app,
+        json!({"name":"Super Leader"}),
+        "PATCH",
+        &format!("/organization/{}/role/{}", org_id, owner_role_id),
+        &token,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::FORBIDDEN);
+}
+
+//-- Delete Role---------

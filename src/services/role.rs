@@ -19,7 +19,7 @@ pub async fn create_role_service(
     user_id: Uuid,
     name: String,
     org_id: Uuid,
-) -> Result<(), AppError> {
+) -> Result<Uuid, AppError> {
     let allowed = check_permission(pool, user_id, org_id, "role:create").await?;
 
     if !allowed {
@@ -30,7 +30,7 @@ pub async fn create_role_service(
         return Err(AppError::Conflict(String::from("This Role Already Exists")));
     }
 
-    create_role(pool, org_id, name.clone()).await?;
+    let id = create_role(pool, org_id, name.clone()).await?;
 
     let _ = write_audit_logs(
         pool,
@@ -40,7 +40,7 @@ pub async fn create_role_service(
     )
     .await;
 
-    Ok(())
+    Ok(id)
 }
 
 pub async fn all_roles_service(pool: &Pool<Postgres>, org_id: Uuid) -> Result<Vec<Role>, AppError> {
