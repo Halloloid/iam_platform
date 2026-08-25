@@ -307,3 +307,38 @@ async fn test_delete_role_in_use_fails(pool: PgPool) {
 
     assert_eq!(status, StatusCode::CONFLICT);
 }
+
+// Permission Assinment ---------------
+#[sqlx::test]
+async fn test_assign_permission_to_role(pool: PgPool) {
+    let (app, token, org_id) = setup_org(pool, "assign_permisson@test.com").await;
+
+    let (_, role_body) = common::request_json_auth(
+        app.clone(),
+        json!({"name":"Editor"}),
+        "POST",
+        &format!("/organization/{}/role", org_id),
+        &token,
+    )
+    .await;
+
+    let role_id = role_body["id"].as_str().unwrap().to_string();
+
+    let (_, perms_body) = common::get_json(app.clone(), "/permission", Some(&token)).await;
+
+    let perms_ids = perms_body["data"].as_array().unwrap().first().unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+
+    let (status, _) = common::request_json_auth(
+        app,
+        json!({"permission_ids":[perms_ids]}),
+        "POST",
+        &format!("/organization/{}/role/{}/permission", org_id, role_id),
+        &token,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+}
