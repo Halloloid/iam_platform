@@ -122,3 +122,33 @@ pub async fn request_json_auth(
 
     (status, json)
 }
+
+#[allow(dead_code)]
+pub async fn setup_org(pool: PgPool, email: &str) -> (axum::Router, String, String) {
+    let app = build_app(pool);
+    let token = register_and_login(app.clone(), email).await;
+
+    let (_, org_body) = request_json_auth(
+        app.clone(),
+        json!({"name":"Test Org"}),
+        "POST",
+        "/organization",
+        &token,
+    )
+    .await;
+
+    let org_id = org_body["id"].as_str().unwrap().to_string();
+
+    (app, token, org_id)
+}
+
+#[allow(dead_code)]
+pub async fn register_user(app: Router, email: &str) -> (String, String) {
+    let token = register_and_login(app.clone(), email).await;
+
+    let (_, me_body) = get_json(app, "/user/me", Some(&token)).await;
+
+    let user_id = me_body["id"].as_str().unwrap().to_string();
+
+    (token, user_id)
+}

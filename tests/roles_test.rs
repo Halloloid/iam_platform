@@ -4,29 +4,10 @@ use sqlx::PgPool;
 
 mod common;
 
-// helper for creating org and and returning token
-async fn setup_org(pool: PgPool, email: &str) -> (axum::Router, String, String) {
-    let app = common::build_app(pool);
-    let token = common::register_and_login(app.clone(), email).await;
-
-    let (_, org_body) = common::request_json_auth(
-        app.clone(),
-        json!({"name":"Test Org"}),
-        "POST",
-        "/organization",
-        &token,
-    )
-    .await;
-
-    let org_id = org_body["id"].as_str().unwrap().to_string();
-
-    (app, token, org_id)
-}
-
 // Create Role Tests
 #[sqlx::test]
 async fn test_create_role(pool: PgPool) {
-    let (app, token, org_id) = setup_org(pool, "create_role@test.com").await;
+    let (app, token, org_id) = common::setup_org(pool, "create_role@test.com").await;
 
     let (status, body) = common::request_json_auth(
         app,
@@ -43,7 +24,7 @@ async fn test_create_role(pool: PgPool) {
 
 #[sqlx::test]
 async fn test_create_duplicate_role_fails(pool: PgPool) {
-    let (app, token, org_id) = setup_org(pool, "dup@test.com").await;
+    let (app, token, org_id) = common::setup_org(pool, "dup@test.com").await;
 
     common::request_json_auth(
         app.clone(),
@@ -68,7 +49,7 @@ async fn test_create_duplicate_role_fails(pool: PgPool) {
 
 #[sqlx::test]
 async fn test_create_owner_role_reserved_fails(pool: PgPool) {
-    let (app, token, org_id) = setup_org(pool, "reserved@test.com").await;
+    let (app, token, org_id) = common::setup_org(pool, "reserved@test.com").await;
 
     let (status, _) = common::request_json_auth(
         app,
@@ -84,7 +65,7 @@ async fn test_create_owner_role_reserved_fails(pool: PgPool) {
 
 #[sqlx::test]
 async fn test_create_role_without_permission_fails(pool: PgPool) {
-    let (app, _, org_id) = setup_org(pool, "no_perm@test.com").await;
+    let (app, _, org_id) = common::setup_org(pool, "no_perm@test.com").await;
 
     let token2 = common::register_and_login(app.clone(), "interuder@test.com").await;
 
@@ -103,7 +84,7 @@ async fn test_create_role_without_permission_fails(pool: PgPool) {
 // Get Roles -------------------
 #[sqlx::test]
 async fn test_get_roles_include_owner(pool: PgPool) {
-    let (app, token, org_id) = setup_org(pool, "get_role@test.com").await;
+    let (app, token, org_id) = common::setup_org(pool, "get_role@test.com").await;
 
     let (status, body) =
         common::get_json(app, &format!("/organization/{}/role", org_id), Some(&token)).await;
@@ -135,7 +116,7 @@ async fn test_get_roles_include_owner(pool: PgPool) {
 //Update Role-----------
 #[sqlx::test]
 async fn test_rename_role_success(pool: PgPool) {
-    let (app, token, org_id) = setup_org(pool, "rename_role@test.com").await;
+    let (app, token, org_id) = common::setup_org(pool, "rename_role@test.com").await;
 
     let (_, role_body) = common::request_json_auth(
         app.clone(),
@@ -163,7 +144,7 @@ async fn test_rename_role_success(pool: PgPool) {
 
 #[sqlx::test]
 async fn test_rename_owner_role_fails(pool: PgPool) {
-    let (app, token, org_id) = setup_org(pool, "rename_owner@test.com").await;
+    let (app, token, org_id) = common::setup_org(pool, "rename_owner@test.com").await;
 
     let (_, role_body) = common::get_json(
         app.clone(),
@@ -197,7 +178,7 @@ async fn test_rename_owner_role_fails(pool: PgPool) {
 //-- Delete Role---------
 #[sqlx::test]
 async fn test_delete_custom_role_success(pool: PgPool) {
-    let (app, token, org_id) = setup_org(pool, "delete_role@test.com").await;
+    let (app, token, org_id) = common::setup_org(pool, "delete_role@test.com").await;
 
     let (_, role_body) = common::request_json_auth(
         app.clone(),
@@ -225,7 +206,7 @@ async fn test_delete_custom_role_success(pool: PgPool) {
 
 #[sqlx::test]
 async fn test_delete_owner_role_fails(pool: PgPool) {
-    let (app, token, org_id) = setup_org(pool, "delete_owner@test.com").await;
+    let (app, token, org_id) = common::setup_org(pool, "delete_owner@test.com").await;
 
     let (_, role_body) = common::get_json(
         app.clone(),
@@ -258,7 +239,7 @@ async fn test_delete_owner_role_fails(pool: PgPool) {
 
 #[sqlx::test]
 async fn test_delete_role_in_use_fails(pool: PgPool) {
-    let (app, token, org_id) = setup_org(pool, "role_in_use@test.com").await;
+    let (app, token, org_id) = common::setup_org(pool, "role_in_use@test.com").await;
 
     let (_, role_body) = common::request_json_auth(
         app.clone(),
@@ -311,7 +292,7 @@ async fn test_delete_role_in_use_fails(pool: PgPool) {
 // Permission Assinment ---------------
 #[sqlx::test]
 async fn test_assign_permission_to_role(pool: PgPool) {
-    let (app, token, org_id) = setup_org(pool, "assign_permisson@test.com").await;
+    let (app, token, org_id) = common::setup_org(pool, "assign_permisson@test.com").await;
 
     let (_, role_body) = common::request_json_auth(
         app.clone(),
