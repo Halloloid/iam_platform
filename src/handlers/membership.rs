@@ -27,9 +27,12 @@ pub async fn add_member_handler(
 
     add_member_services(&pool, req.email, user_id, org_id).await?;
 
-    Ok(Json(json!({
-        "message":"Added new Member to The Organization"
-    })))
+    Ok((
+        StatusCode::CREATED,
+        Json(json!({
+            "message":"Added new Member to The Organization"
+        })),
+    ))
 }
 
 pub async fn all_members_handler(

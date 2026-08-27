@@ -31,6 +31,10 @@ pub async fn add_member_services(
 
     let (member_id, _) = fnd_by_email(pool, member_email).await?;
 
+    if check_membership(pool, member_id, org_id).await? {
+        return Err(AppError::Conflict(format!("Member Already Exist")));
+    }
+
     add_member(pool, org_id, member_id).await?;
 
     let _ = write_audit_logs(
