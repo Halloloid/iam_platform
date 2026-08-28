@@ -38,9 +38,9 @@ pub async fn add_member_handler(
 pub async fn all_members_handler(
     State(pool): State<PgPool>,
     Path(org_id): Path<Uuid>,
-    Extension(_): Extension<Claims>,
+    Extension(claims): Extension<Claims>,
 ) -> Result<impl IntoResponse, AppError> {
-    let data = all_members_services(&pool, org_id).await?;
+    let data = all_members_services(&pool, org_id,claims.sub).await?;
 
     Ok(Json(json!({
         "data":data

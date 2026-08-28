@@ -73,3 +73,47 @@ async fn test_add_member_without_permission_fails(pool: PgPool) {
 }
 
 // Get Members Tests ---------------
+#[sqlx::test]
+async fn test_list_members_success(pool: PgPool) {
+    let (app, owner_token, org_id) = common::setup_org(pool, "owner_member@test.com").await;
+
+    common::register_user(app.clone(), "user_member@test.com").await;
+
+    common::request_json_auth(
+        app.clone(),
+        json!({"email":"user_member@test.com"}),
+        "POST",
+        &format!("/organization/{}/member", org_id),
+        &owner_token,
+    )
+    .await;
+
+    let (status, body) = common::get_json(
+        app,
+        &format!("/organization/{}/member", org_id),
+        Some(&owner_token),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+
+    assert_eq!(body["data"].as_array().unwrap().len(), 2);
+}
+
+#[sqlx::test]
+async fn test_list_non_member_fails(pool: PgPool) {
+    let (app, _, org_id) = common::setup_org(pool, "owner@test.com").await;
+
+    let (token2, _) = common::register_user(app.clone(), "non_member@test.com").await;
+
+    let (status, _) = common::get_json(
+        app,
+        &format!("/organization/{}/member", org_id),
+        Some(&token2),
+    )
+    .await;
+    
+    assert_eq!(status, StatusCode::FORBIDDEN);
+}
+
+// Remove Member

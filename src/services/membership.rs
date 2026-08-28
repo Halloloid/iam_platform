@@ -78,7 +78,12 @@ pub async fn remove_member_service(
 pub async fn all_members_services(
     pool: &PgPool,
     org_id: Uuid,
+    member_id: Uuid
 ) -> Result<Vec<Membership>, AppError> {
+    if !check_membership(pool, member_id, org_id).await? {
+        return Err(AppError::Forbidden);
+    }
+    
     let data = all_members(pool, org_id).await?;
 
     Ok(data)
