@@ -112,8 +112,54 @@ async fn test_list_non_member_fails(pool: PgPool) {
         Some(&token2),
     )
     .await;
-    
+
     assert_eq!(status, StatusCode::FORBIDDEN);
 }
 
-// Remove Member
+// Remove Member -----------------
+#[sqlx::test]
+async fn test_remove_member_success(pool: PgPool) {
+    let (app, owner_token, org_id) = common::setup_org(pool, "owner@test.com").await;
+
+    let (_, user_id) = common::register_user(app.clone(), "to_be_removed@test.com").await;
+
+    common::request_json_auth(
+        app.clone(),
+        json!({"email":"to_be_removed@test.com"}),
+        "POST",
+        &format!("/organization/{}/member", org_id),
+        &owner_token,
+    )
+    .await;
+
+    let (status, _) = common::request_json_auth(
+        app,
+        json!({}),
+        "DELETE",
+        &format!("/organization/{}/member/{}", org_id, user_id),
+        &owner_token,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::NO_CONTENT);
+}
+
+#[sqlx::test]
+async fn test_remove_last_owner_fails(pool: PgPool) {
+    let (app, owner_token, org_id) = common::setup_org(pool, "owner@test.com").await;
+
+    let (_, me_body) = common::get_json(app.clone(), "/user/me", Some(&owner_token)).await;
+
+    let owner_id = me_body["id"].as_str().unwrap().to_string();
+
+    let (status, _) = common::request_json_auth(
+        app,
+        json!({}),
+        "DELETE",
+        &format!("/organization/{}/member/{}", org_id, owner_id),
+        &owner_token,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::FORBIDDEN);
+}

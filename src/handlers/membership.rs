@@ -40,7 +40,7 @@ pub async fn all_members_handler(
     Path(org_id): Path<Uuid>,
     Extension(claims): Extension<Claims>,
 ) -> Result<impl IntoResponse, AppError> {
-    let data = all_members_services(&pool, org_id,claims.sub).await?;
+    let data = all_members_services(&pool, org_id, claims.sub).await?;
 
     Ok(Json(json!({
         "data":data
@@ -56,7 +56,10 @@ pub async fn remove_member_handler(
 
     remove_member_service(&pool, user_id, member_id, org_id).await?;
 
-    Ok(Json("Member has Removed From the Organization"))
+    Ok((
+        StatusCode::NO_CONTENT,
+        Json("Member has Removed From the Organization"),
+    ))
 }
 
 pub async fn return_role_of_member_handler(
