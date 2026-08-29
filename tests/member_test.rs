@@ -233,3 +233,94 @@ async fn test_assign_role_non_member_fails(pool: PgPool) {
 
     assert_eq!(status, StatusCode::NOT_FOUND);
 }
+
+// Remove Role From a Member --------
+#[sqlx::test]
+async fn test_remove_member_role_success(pool: PgPool) {
+    let (app, owner_token, org_id) = setup_org(pool, "owner@test.com").await;
+
+    let (_, role_body) = common::request_json_auth(
+        app.clone(),
+        json!({"name":"Viewer"}),
+        "POST",
+        &format!("/organization/{}/role", org_id),
+        &owner_token,
+    )
+    .await;
+
+    let role_id = role_body["id"].as_str().unwrap().to_string();
+
+    let (_, user_id) = common::register_user(app.clone(), "assign_role@test.com").await;
+
+    common::request_json_auth(
+        app.clone(),
+        json!({"email":"assign_role@test.com"}),
+        "POST",
+        &format!("/organization/{}/member", org_id),
+        &owner_token,
+    )
+    .await;
+
+    common::request_json_auth(
+        app.clone(),
+        json!({"id":role_id}),
+        "POST",
+        &format!("/organization/{}/member/{}/role", org_id, user_id),
+        &owner_token,
+    )
+    .await;
+
+    let (status, _) = common::request_json_auth(
+        app,
+        json!({}),
+        "DELETE",
+        &format!(
+            "/organization/{}/member/{}/role/{}",
+            org_id, user_id, role_id
+        ),
+        &owner_token,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::NO_CONTENT);
+}
+
+#[sqlx::test]
+async fn test_remove_last_owner_role_fails(pool: PgPool) {
+    let (app, owner_token, org_id) = setup_org(pool, "owner@test.com").await;
+
+    let (_, me_body) = common::get_json(app.clone(), "/user/me", Some(&owner_token)).await;
+
+    let owner_id = me_body["id"].as_str().unwrap().to_string();
+
+    let (_, role_body) = common::get_json(
+        app.clone(),
+        &format!("/organization/{}/role", org_id),
+        Some(&owner_token),
+    )
+    .await;
+
+    let owner_role_id = role_body
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|r| r["name"] == "owner")
+        .unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+
+    let (status, _) = common::request_json_auth(
+        app,
+        json!({}),
+        "DELETE",
+        &format!(
+            "/organization/{}/member/{}/role/{}",
+            org_id, owner_id, owner_role_id
+        ),
+        &owner_token,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::CONFLICT)
+}

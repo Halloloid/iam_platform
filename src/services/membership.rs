@@ -141,6 +141,10 @@ pub async fn disassign_role_service(
     if paticular_role(pool, org_id, role_id).await?.is_none() {
         return Err(AppError::NotFound);
     }
+   
+   if let Some(r)  = paticular_role(pool, org_id, role_id).await?  && r.name == "owner"{
+       return Err(AppError::Conflict(format!("Owner trying to Remove Owner Role")));
+   };
 
     disassign_role(pool, role_id, member_id, org_id).await?;
 
