@@ -322,5 +322,5 @@ async fn test_remove_last_owner_role_fails(pool: PgPool) {
     )
     .await;
 
-    assert_eq!(status, StatusCode::CONFLICT)
+    assert_eq!(status, StatusCode::CONFLICT);
 }
