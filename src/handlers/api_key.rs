@@ -35,7 +35,7 @@ pub async fn create_api_key_handler(
     )
     .await?;
 
-    Ok(Json(res))
+    Ok((StatusCode::CREATED,Json(res)))
 }
 
 pub async fn all_api_keys_handler(
