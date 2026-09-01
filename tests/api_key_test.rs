@@ -6,6 +6,8 @@ use crate::common::get_first_permission_id;
 
 mod common;
 
+// Api Key Creation
+
 #[sqlx::test]
 async fn test_create_api_key_success(pool: PgPool) {
     let (app, token, org_id) = common::setup_org(pool, "create_api@test.com").await;
@@ -109,4 +111,80 @@ async fn test_create_api_key_without_permission_fails(pool: PgPool) {
     .await;
 
     assert_eq!(status, StatusCode::FORBIDDEN);
+}
+
+// List Api Keys -----
+#[sqlx::test]
+async fn test_list_api_keys_shows_scopes(pool: PgPool) {
+    let (app, owner_token, org_id) = common::setup_org(pool, "list_key@test.com").await;
+
+    let perm_id = common::get_first_permission_id(app.clone(), &owner_token).await;
+
+    common::create_api_key(app.clone(), &org_id, &owner_token, &perm_id).await;
+
+    let (status, body) = common::get_json(
+        app,
+        &format!("/organization/{}/api_key", org_id),
+        Some(&owner_token),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+
+    let keys = body["data"].as_array().unwrap();
+
+    assert_eq!(keys.len(), 1);
+
+    assert!(keys[0]["scopes"].is_array());
+    assert!(keys[0]["scopes"].as_array().unwrap().len() > 0);
+}
+
+//-- Revoke API Keys -----
+#[sqlx::test]
+async fn test_revoke_api_key_success(pool: PgPool) {
+    let (app, owner_token, org_id) = common::setup_org(pool, "revoke_key@test.com").await;
+
+    let perm_id = common::get_first_permission_id(app.clone(), &owner_token).await;
+
+    let (key_id, _) = common::create_api_key(app.clone(), &org_id, &owner_token, &perm_id).await;
+
+    let (status, _) = common::request_json_auth(
+        app,
+        json!({}),
+        "DELETE",
+        &format!("/organization/{}/api_key/{}", org_id, key_id),
+        &owner_token,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::NO_CONTENT);
+}
+
+#[sqlx::test]
+async fn test_revoke_already_revoked_key_fails(pool: PgPool) {
+    let (app, owner_token, org_id) = common::setup_org(pool, "revoke_key@test.com").await;
+
+    let perm_id = common::get_first_permission_id(app.clone(), &owner_token).await;
+
+    let (key_id, _) = common::create_api_key(app.clone(), &org_id, &owner_token, &perm_id).await;
+
+    common::request_json_auth(
+        app.clone(),
+        json!({}),
+        "DELETE",
+        &format!("/organization/{}/api_key/{}", org_id, key_id),
+        &owner_token,
+    )
+    .await;
+
+    let (status, _) = common::request_json_auth(
+        app,
+        json!({}),
+        "DELETE",
+        &format!("/organization/{}/api_key/{}", org_id, key_id),
+        &owner_token,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::NOT_FOUND);
 }
