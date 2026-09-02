@@ -157,11 +157,7 @@ pub async fn register_user(app: Router, email: &str) -> (String, String) {
 pub async fn get_first_permission_id(app: axum::Router, token: &str) -> String {
     let (_, perms_body) = get_json(app, "/permission", Some(token)).await;
 
-    perms_body["data"]
-        .as_array()
-        .unwrap()
-        .first()
-        .unwrap()["id"]
+    perms_body["data"].as_array().unwrap().first().unwrap()["id"]
         .as_str()
         .unwrap()
         .to_string()
@@ -170,19 +166,25 @@ pub async fn get_first_permission_id(app: axum::Router, token: &str) -> String {
 #[allow(dead_code)]
 pub async fn create_api_key(
     app: Router,
-    org_id:&str,
-    token:&str,
-    perm_id:&str
-) -> (String,String){
-
-    let (_,body) = request_json_auth(app, json!({
-        "name":"Test Key",
-        "permission_ids":[perm_id],
-        "expires_in_dayes":1
-    }), "POST", &format!("/organization/{}/api_key",org_id), token).await;
+    org_id: &str,
+    token: &str,
+    perm_id: &str,
+) -> (String, String) {
+    let (_, body) = request_json_auth(
+        app,
+        json!({
+            "name":"Test Key",
+            "permission_ids":[perm_id],
+            "expires_in_dayes":1
+        }),
+        "POST",
+        &format!("/organization/{}/api_key", org_id),
+        token,
+    )
+    .await;
 
     let key_id = body["id"].as_str().unwrap().to_string();
     let raw_key = body["raw_key"].as_str().unwrap().to_string();
 
-    (key_id,raw_key)
+    (key_id, raw_key)
 }

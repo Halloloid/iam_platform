@@ -1,6 +1,7 @@
-use axum::http::StatusCode;
+use axum::{body::Body, http::{Request, StatusCode}};
 use serde_json::json;
 use sqlx::PgPool;
+use tower::ServiceExt;
 
 use crate::common::get_first_permission_id;
 
@@ -187,4 +188,33 @@ async fn test_revoke_already_revoked_key_fails(pool: PgPool) {
     .await;
 
     assert_eq!(status, StatusCode::NOT_FOUND);
+}
+
+// API Key Auth
+
+#[sqlx::test]
+async fn test_api_key_auth_valid_key_succeds(pool: PgPool){
+    let (app,owner_token,org_id) = common::setup_org(pool, "auth@test.com").await;
+
+    let perm_id = common::get_first_permission_id(app.clone(), &owner_token).await;
+
+    let (_, raw_key) = common::create_api_key(app.clone(), &org_id, &owner_token, &perm_id).await;
+
+    let response = app.oneshot(
+        Request::builder()
+            .method("GET")
+            .uri(&format!("/organization/{}/api_key",org_id))
+            .header("Authorization", format!("Bearer {}",raw_key))
+            .body(Body::empty())
+            .unwrap()
+    ).await.unwrap();
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    
+    println!("Body: {}", String::from_utf8_lossy(&body));
+    print!("{:#?}",body);
+
+    assert_eq!(500,StatusCode::OK);
 }
