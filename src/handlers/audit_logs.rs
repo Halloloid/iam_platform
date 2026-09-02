@@ -7,14 +7,14 @@ use serde_json::json;
 use sqlx::PgPool;
 
 use crate::{
-    config::{auth_config::Claims, response_config::AppError},
+    config::{auth_config::AuthContext, response_config::AppError},
     models::audit_logs::AuditLogPagination,
     services::audit_logs::{org_logs_service, user_logs_service},
 };
 
 pub async fn user_logs_handler(
     State(pool): State<PgPool>,
-    Extension(claims): Extension<Claims>,
+    Extension(auth): Extension<AuthContext>,
     Query(params): Query<AuditLogPagination>,
 ) -> Result<impl IntoResponse, AppError> {
     let user_id = claims.sub;
@@ -31,7 +31,7 @@ pub async fn user_logs_handler(
 
 pub async fn org_logs_handler(
     State(pool): State<PgPool>,
-    Extension(claims): Extension<Claims>,
+    Extension(auth): Extension<AuthContext>,
     Path(org_id): Path<uuid::Uuid>,
     Query(params): Query<AuditLogPagination>,
 ) -> Result<impl IntoResponse, AppError> {

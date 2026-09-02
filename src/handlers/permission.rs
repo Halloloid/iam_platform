@@ -8,7 +8,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
-    config::{auth_config::Claims, response_config::AppError},
+    config::{auth_config::AuthContext, response_config::AppError},
     models::permission::AssignPermissions,
     services::permission::{
         assign_permissions_service, delete_permission_of_role_service, permission_services,
@@ -29,7 +29,7 @@ pub async fn all_permission_handler(
 
 pub async fn assign_permssion_handler(
     State(pool): State<PgPool>,
-    Extension(claims): Extension<Claims>,
+    Extension(auth): Extension<AuthContext>,
     Path((org_id, role_id)): Path<(Uuid, Uuid)>,
     Json(permission_ids): Json<AssignPermissions>,
 ) -> Result<impl IntoResponse, AppError> {
@@ -51,7 +51,7 @@ pub async fn assign_permssion_handler(
 
 pub async fn delete_permission_of_role_handler(
     State(pool): State<PgPool>,
-    Extension(claims): Extension<Claims>,
+    Extension(auth): Extension<AuthContext>,
     Path((org_id, role_id)): Path<(Uuid, Uuid)>,
     Json(permission_ids): Json<AssignPermissions>,
 ) -> Result<impl IntoResponse, AppError> {

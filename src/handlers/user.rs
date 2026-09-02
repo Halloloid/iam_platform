@@ -11,7 +11,7 @@ use sqlx::PgPool;
 use validator::Validate;
 
 use crate::{
-    config::{auth_config::Claims, response_config::AppError},
+    config::{auth_config::AuthContext, response_config::AppError},
     models::{
         session::ReqToken,
         user::{Create, LoginReq, LoginRes, UpdateProfile},
@@ -87,7 +87,7 @@ pub async fn logout(
 }
 
 pub async fn view_profile(
-    Extension(claims): Extension<Claims>,
+    Extension(auth): Extension<AuthContext>,
     State(pool): State<PgPool>,
 ) -> Result<impl IntoResponse, AppError> {
     let user_id = claims.sub;
@@ -98,7 +98,7 @@ pub async fn view_profile(
 }
 
 pub async fn update_profile(
-    Extension(claims): Extension<Claims>,
+    Extension(auth): Extension<AuthContext>,
     State(pool): State<PgPool>,
     Json(name): Json<UpdateProfile>,
 ) -> Result<impl IntoResponse, AppError> {

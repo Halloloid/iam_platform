@@ -10,7 +10,7 @@ use uuid::Uuid;
 use validator::Validate;
 
 use crate::{
-    config::{auth_config::Claims, response_config::AppError},
+    config::{auth_config::AuthContext, response_config::AppError},
     models::organization::{CreateOrgReq, OrgPaginationQuery, OrgUpdate},
     repositories::organization::create_organization,
     services::organization::{all_org_service, one_org_service, update_org_service},
@@ -18,7 +18,7 @@ use crate::{
 
 pub async fn create(
     State(pool): State<PgPool>,
-    Extension(claims): Extension<Claims>,
+    Extension(auth): Extension<AuthContext>,
     Json(body): Json<CreateOrgReq>,
 ) -> Result<impl IntoResponse, AppError> {
     body.validate().map_err(AppError::Validation)?;
@@ -31,7 +31,7 @@ pub async fn create(
 
 pub async fn all_orgs(
     State(pool): State<PgPool>,
-    Extension(claims): Extension<Claims>,
+    Extension(auth): Extension<AuthContext>,
     Query(params): Query<OrgPaginationQuery>,
 ) -> Result<impl IntoResponse, AppError> {
     let user_id = claims.sub;
@@ -48,7 +48,7 @@ pub async fn all_orgs(
 
 pub async fn paticular_org(
     State(pool): State<PgPool>,
-    Extension(claims): Extension<Claims>,
+    Extension(auth): Extension<AuthContext>,
     Path(org_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
     let user_id = claims.sub;
@@ -60,7 +60,7 @@ pub async fn paticular_org(
 
 pub async fn patch_org(
     State(pool): State<PgPool>,
-    Extension(claims): Extension<Claims>,
+    Extension(auth): Extension<AuthContext>,
     Path(org_id): Path<Uuid>,
     Json(name): Json<OrgUpdate>,
 ) -> Result<impl IntoResponse, AppError> {

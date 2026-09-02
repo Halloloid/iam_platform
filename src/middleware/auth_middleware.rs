@@ -41,7 +41,7 @@ pub async fn auth(
             return Err(AppError::Unauthorized);
         };
 
-        req.extensions_mut().insert(claims);
+        req.extensions_mut().insert(AuthContext::User(claims));
     }
 
     Ok(next.run(req).await)

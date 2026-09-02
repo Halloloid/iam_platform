@@ -9,15 +9,14 @@ use sqlx::PgPool;
 use uuid::Uuid;
 use validator::Validate;
 
+
 use crate::{
-    config::{auth_config::Claims, response_config::AppError},
-    models::api_key::CreateApiRequest,
-    services::api_key::{all_api_keys_service, create_api_key_service, delete_api_keys},
+    config::{auth_config::AuthContext, response_config::AppError}, models::api_key::CreateApiRequest, services::api_key::{all_api_keys_service, create_api_key_service, delete_api_keys},
 };
 
 pub async fn create_api_key_handler(
     State(pool): State<PgPool>,
-    Extension(claims): Extension<Claims>,
+    Extension(auth): Extension<AuthContext>,
     Path(org_id): Path<Uuid>,
     Json(req): Json<CreateApiRequest>,
 ) -> Result<impl IntoResponse, AppError> {
@@ -40,7 +39,7 @@ pub async fn create_api_key_handler(
 
 pub async fn all_api_keys_handler(
     State(pool): State<PgPool>,
-    Extension(claims): Extension<Claims>,
+    Extension(auth): Extension<AuthContext>,
     Path(org_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
     let user_id = claims.sub;
@@ -54,7 +53,7 @@ pub async fn all_api_keys_handler(
 
 pub async fn delete_api_key_handler(
     State(pool): State<PgPool>,
-    Extension(claims): Extension<Claims>,
+    Extension(auth): Extension<AuthContext>,
     Path((org_id, key_id)): Path<(Uuid, Uuid)>,
 ) -> Result<impl IntoResponse, AppError> {
     let user_id = claims.sub;

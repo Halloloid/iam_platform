@@ -9,7 +9,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
-    config::{auth_config::Claims, response_config::AppError},
+    config::{auth_config::AuthContext, response_config::AppError},
     models::{membership::AddMember, role::RoleId},
     services::membership::{
         add_member_services, all_members_services, assign_role_service, disassign_role_service,
@@ -20,7 +20,7 @@ use crate::{
 pub async fn add_member_handler(
     State(pool): State<PgPool>,
     Path(org_id): Path<Uuid>,
-    Extension(claims): Extension<Claims>,
+    Extension(auth): Extension<AuthContext>,
     Json(req): Json<AddMember>,
 ) -> Result<impl IntoResponse, AppError> {
     let user_id = claims.sub;
@@ -38,7 +38,7 @@ pub async fn add_member_handler(
 pub async fn all_members_handler(
     State(pool): State<PgPool>,
     Path(org_id): Path<Uuid>,
-    Extension(claims): Extension<Claims>,
+    Extension(auth): Extension<AuthContext>,
 ) -> Result<impl IntoResponse, AppError> {
     let data = all_members_services(&pool, org_id, claims.sub).await?;
 
@@ -50,7 +50,7 @@ pub async fn all_members_handler(
 pub async fn remove_member_handler(
     State(pool): State<PgPool>,
     Path((org_id, member_id)): Path<(Uuid, Uuid)>,
-    Extension(claims): Extension<Claims>,
+    Extension(auth): Extension<AuthContext>,
 ) -> Result<impl IntoResponse, AppError> {
     let user_id = claims.sub;
 
@@ -76,7 +76,7 @@ pub async fn return_role_of_member_handler(
 
 pub async fn assign_role_handler(
     State(pool): State<PgPool>,
-    Extension(claims): Extension<Claims>,
+    Extension(auth): Extension<AuthContext>,
     Path((org_id, member_id)): Path<(Uuid, Uuid)>,
     Json(role): Json<RoleId>,
 ) -> Result<impl IntoResponse, AppError> {
@@ -89,7 +89,7 @@ pub async fn assign_role_handler(
 
 pub async fn disassign_role_handler(
     State(pool): State<PgPool>,
-    Extension(claims): Extension<Claims>,
+    Extension(auth): Extension<AuthContext>,
     Path((org_id, member_id, role_id)): Path<(Uuid, Uuid, Uuid)>,
 ) -> Result<impl IntoResponse, AppError> {
     let user_id = claims.sub;

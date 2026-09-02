@@ -9,14 +9,14 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
-    config::{auth_config::Claims, response_config::AppError},
+    config::{auth_config::AuthContext, response_config::AppError},
     services::session::{list_sessions, revoke_session_service},
 };
 
 pub async fn list_session_handler(
     State(pool): State<PgPool>,
     headers: HeaderMap,
-    Extension(claims): Extension<Claims>,
+    Extension(auth): Extension<AuthContext>,
 ) -> Result<impl IntoResponse, AppError> {
     let user_id = claims.sub;
 
@@ -35,7 +35,7 @@ pub async fn list_session_handler(
 
 pub async fn revoke_session_handler(
     State(pool): State<PgPool>,
-    Extension(claims): Extension<Claims>,
+    Extension(auth): Extension<AuthContext>,
     Path(session_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
     let user_id = claims.sub;

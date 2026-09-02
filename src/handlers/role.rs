@@ -9,7 +9,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
-    config::{auth_config::Claims, response_config::AppError},
+    config::{auth_config::AuthContext, response_config::AppError},
     models::role::RoleCreation,
     services::role::{
         all_roles_service, create_role_service, delete_role_service, update_role_service,
@@ -18,7 +18,7 @@ use crate::{
 
 pub async fn create_role_handler(
     State(pool): State<PgPool>,
-    Extension(claims): Extension<Claims>,
+    Extension(auth): Extension<AuthContext>,
     Path(org_id): Path<Uuid>,
     Json(name): Json<RoleCreation>,
 ) -> Result<impl IntoResponse, AppError> {
@@ -47,7 +47,7 @@ pub async fn all_roles_handler(
 
 pub async fn update_role_handler(
     State(pool): State<PgPool>,
-    Extension(claims): Extension<Claims>,
+    Extension(auth): Extension<AuthContext>,
     Path((org_id, role_id)): Path<(Uuid, Uuid)>,
     Json(req): Json<RoleCreation>,
 ) -> Result<impl IntoResponse, AppError> {
@@ -64,7 +64,7 @@ pub async fn update_role_handler(
 
 pub async fn delete_role_handler(
     State(pool): State<PgPool>,
-    Extension(claims): Extension<Claims>,
+    Extension(auth): Extension<AuthContext>,
     Path((org_id, role_id)): Path<(Uuid, Uuid)>,
 ) -> Result<impl IntoResponse, AppError> {
     let user_id = claims.sub;
