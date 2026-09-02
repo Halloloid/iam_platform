@@ -67,6 +67,32 @@ pub enum AuthContext {
     ApiKey(ApiKeyRecord),
 }
 
+pub struct AuthActor {
+    pub user_id: Option<Uuid>,
+    pub org_id: Option<Uuid>,
+    pub api_key_id: Option<Uuid>,
+    pub actor_id: Uuid,
+}
+
+impl AuthActor {
+    pub fn from_auth(auth: &AuthContext) -> Self {
+        match auth {
+            AuthContext::User(claims) => AuthActor {
+                user_id: Some(claims.sub),
+                org_id: None,
+                api_key_id: None,
+                actor_id: claims.sub,
+            },
+            AuthContext::ApiKey(api_key_record) => AuthActor {
+                user_id: None,
+                org_id: Some(api_key_record.org_id),
+                api_key_id: Some(api_key_record.id),
+                actor_id: api_key_record.id,
+            },
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

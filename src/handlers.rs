@@ -2,8 +2,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
-    config::{auth_config::AuthContext, response_config::AppError},
-    repositories::organization::check_permission,
+    config::{auth_config::{AuthActor, AuthContext}, response_config::AppError}, repositories::organization::check_permission,
 };
 
 pub mod api_key;
@@ -16,19 +15,21 @@ pub mod role;
 pub mod session;
 pub mod user;
 
-pub async fn resolver_user_id(
+pub async fn resolver_actor(
     auth: &AuthContext,
     required_permission: &str,
     org_id: Uuid,
     pool: PgPool,
-) -> Result<Option<Uuid>, AppError> {
+) -> Result<AuthActor, AppError> {
+
+    let actor = AuthActor::from_auth(auth);
+
+    
     match auth {
         AuthContext::User(claims) => {
             if !check_permission(&pool, claims.sub, org_id, required_permission).await? {
                 return Err(AppError::Forbidden);
             }
-
-            Ok(Some(claims.sub))
            
         }
         AuthContext::ApiKey(api_key_record) => {
@@ -40,7 +41,8 @@ pub async fn resolver_user_id(
             if !api_key_record.scopes.contains(&required_permission.to_string()){
                 return Err(AppError::Forbidden);
             }
-            Ok(None)
         },
     }
+
+    Ok(actor)
 }
