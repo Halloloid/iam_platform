@@ -6,10 +6,7 @@ use crate::{
     models::organization::{ListOrgsRes, Organization},
     repositories::{
         audit_logs::write_audit_logs,
-        organization::{
-            all_organizations_asc, all_organizations_desc, check_permission, one_org,
-            update_org_name,
-        },
+        organization::{all_organizations_asc, all_organizations_desc, one_org, update_org_name},
     },
     services::service_helper::{decode_cursor, encode_cursor},
 };
@@ -59,16 +56,10 @@ pub async fn one_org_service(
 
 pub async fn update_org_service(
     pool: &Pool<Postgres>,
-    user_id: Uuid,
+    _actor_id: Uuid,
     org_id: Uuid,
     name: String,
 ) -> Result<(), AppError> {
-    let allowed = check_permission(pool, user_id, org_id, "organization:update").await?;
-
-    if !allowed {
-        return Err(AppError::Forbidden);
-    }
-
     update_org_name(org_id, name, pool).await?;
 
     let _ = write_audit_logs(

@@ -9,9 +9,10 @@ use sqlx::PgPool;
 use uuid::Uuid;
 use validator::Validate;
 
-
 use crate::{
-    config::{auth_config::AuthContext, response_config::AppError}, models::api_key::CreateApiRequest, services::api_key::{all_api_keys_service, create_api_key_service, delete_api_keys},
+    config::{auth_config::AuthContext, response_config::AppError},
+    models::api_key::CreateApiRequest,
+    services::api_key::{all_api_keys_service, create_api_key_service, delete_api_keys},
 };
 
 pub async fn create_api_key_handler(
@@ -34,7 +35,7 @@ pub async fn create_api_key_handler(
     )
     .await?;
 
-    Ok((StatusCode::CREATED,Json(res)))
+    Ok((StatusCode::CREATED, Json(res)))
 }
 
 pub async fn all_api_keys_handler(

@@ -2,14 +2,13 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
-    config::response_config::AppError,
+    config::{auth_config::AuthActor, response_config::AppError},
     models::membership::Membership,
     repositories::{
         audit_logs::write_audit_logs,
         membership::{
             add_member, all_members, assign_role, check_membership, delete_member, disassign_role,
         },
-        organization::check_permission,
         role::{paticular_role, return_role},
         user::{check_email, fnd_by_email},
     },
@@ -23,10 +22,6 @@ pub async fn add_member_services(
 ) -> Result<(), AppError> {
     if !check_email(pool, member_email.clone()).await? {
         return Err(AppError::NotFound);
-    }
-
-    if !check_permission(pool, user_id, org_id, "member:add").await? {
-        return Err(AppError::Forbidden);
     }
 
     let (member_id, _) = fnd_by_email(pool, member_email).await?;
@@ -50,11 +45,13 @@ pub async fn add_member_services(
 
 pub async fn remove_member_service(
     pool: &PgPool,
-    user_id: Uuid,
+    actor: &AuthActor,
     member_id: Uuid,
     org_id: Uuid,
 ) -> Result<(), AppError> {
-    if !check_permission(pool, user_id, org_id, "member:remove").await? || user_id == member_id {
+    if let Some(user_id) = actor.user_id
+        && user_id == member_id
+    {
         return Err(AppError::Forbidden);
     }
 
@@ -67,7 +64,7 @@ pub async fn remove_member_service(
     let _ = write_audit_logs(
         pool,
         "member:removed",
-        user_id,
+        actor.actor_id,
         &format!("organization:{}/member:{}", org_id, member_id),
     )
     .await;
@@ -78,12 +75,14 @@ pub async fn remove_member_service(
 pub async fn all_members_services(
     pool: &PgPool,
     org_id: Uuid,
-    member_id: Uuid
+    actor: &AuthActor,
 ) -> Result<Vec<Membership>, AppError> {
-    if !check_membership(pool, member_id, org_id).await? {
+    if let Some(member_id) = actor.user_id
+        && !check_membership(pool, member_id, org_id).await?
+    {
         return Err(AppError::Forbidden);
     }
-    
+
     let data = all_members(pool, org_id).await?;
 
     Ok(data)
@@ -102,14 +101,10 @@ pub async fn return_member_role_service(
 pub async fn assign_role_service(
     pool: &PgPool,
     org_id: Uuid,
-    user_id: Uuid,
+    _actor_id: Uuid,
     member_id: Uuid,
     role_id: Uuid,
 ) -> Result<(), AppError> {
-    if !check_permission(pool, user_id, org_id, "role:assign").await? {
-        return Err(AppError::Forbidden);
-    }
-
     if !check_membership(pool, member_id, org_id).await? {
         return Err(AppError::NotFound);
     }
@@ -126,14 +121,10 @@ pub async fn assign_role_service(
 pub async fn disassign_role_service(
     pool: &PgPool,
     org_id: Uuid,
-    user_id: Uuid,
+    _actor_id: Uuid,
     member_id: Uuid,
     role_id: Uuid,
 ) -> Result<(), AppError> {
-    if !check_permission(pool, user_id, org_id, "role:assign").await? {
-        return Err(AppError::Forbidden);
-    }
-
     if !check_membership(pool, member_id, org_id).await? {
         return Err(AppError::NotFound);
     }
@@ -141,10 +132,14 @@ pub async fn disassign_role_service(
     if paticular_role(pool, org_id, role_id).await?.is_none() {
         return Err(AppError::NotFound);
     }
-   
-   if let Some(r)  = paticular_role(pool, org_id, role_id).await?  && r.name == "owner"{
-       return Err(AppError::Conflict(format!("Owner trying to Remove Owner Role")));
-   };
+
+    if let Some(r) = paticular_role(pool, org_id, role_id).await?
+        && r.name == "owner"
+    {
+        return Err(AppError::Conflict(format!(
+            "Owner trying to Remove Owner Role"
+        )));
+    };
 
     disassign_role(pool, role_id, member_id, org_id).await?;
 

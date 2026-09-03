@@ -10,7 +10,11 @@ use uuid::Uuid;
 use validator::Validate;
 
 use crate::{
-    config::{auth_config::AuthContext, response_config::AppError}, handlers::{require_user, resolver_actor}, models::organization::{CreateOrgReq, OrgPaginationQuery, OrgUpdate}, repositories::organization::create_organization, services::organization::{all_org_service, one_org_service, update_org_service},
+    config::{auth_config::AuthContext, response_config::AppError},
+    handlers::{require_user, resolver_actor},
+    models::organization::{CreateOrgReq, OrgPaginationQuery, OrgUpdate},
+    repositories::organization::create_organization,
+    services::organization::{all_org_service, one_org_service, update_org_service},
 };
 
 pub async fn create(
@@ -62,7 +66,7 @@ pub async fn patch_org(
     Path(org_id): Path<Uuid>,
     Json(name): Json<OrgUpdate>,
 ) -> Result<impl IntoResponse, AppError> {
-    let actor = resolver_actor(&auth, "organization:update", org_id, &pool).await?;
+    let actor = resolver_actor(&auth, Some("organization:update"), org_id, &pool).await?;
 
     update_org_service(&pool, actor.actor_id, org_id, name.name).await?;
 
