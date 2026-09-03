@@ -19,12 +19,10 @@ pub async fn resolver_actor(
     auth: &AuthContext,
     required_permission: &str,
     org_id: Uuid,
-    pool: PgPool,
+    pool: &PgPool,
 ) -> Result<AuthActor, AppError> {
-
     let actor = AuthActor::from_auth(auth);
 
-    
     match auth {
         AuthContext::User(claims) => {
             if !check_permission(&pool, claims.sub, org_id, required_permission).await? {
@@ -45,4 +43,11 @@ pub async fn resolver_actor(
     }
 
     Ok(actor)
+}
+
+pub fn require_user(auth :&AuthContext) -> Result<Uuid,AppError>{
+    match auth {
+        AuthContext::User(claims) => return Ok(claims.sub),
+        AuthContext::ApiKey(_) => return Err(AppError::Forbidden),
+    }
 }

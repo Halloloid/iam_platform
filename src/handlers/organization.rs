@@ -10,10 +10,7 @@ use uuid::Uuid;
 use validator::Validate;
 
 use crate::{
-    config::{auth_config::AuthContext, response_config::AppError},
-    models::organization::{CreateOrgReq, OrgPaginationQuery, OrgUpdate},
-    repositories::organization::create_organization,
-    services::organization::{all_org_service, one_org_service, update_org_service},
+    config::{auth_config::AuthContext, response_config::AppError}, handlers::{require_user, resolver_actor}, models::organization::{CreateOrgReq, OrgPaginationQuery, OrgUpdate}, repositories::organization::create_organization, services::organization::{all_org_service, one_org_service, update_org_service},
 };
 
 pub async fn create(
@@ -22,7 +19,8 @@ pub async fn create(
     Json(body): Json<CreateOrgReq>,
 ) -> Result<impl IntoResponse, AppError> {
     body.validate().map_err(AppError::Validation)?;
-    let user_id = claims.sub;
+
+    let user_id = require_user(&auth)?;
 
     let org_id = create_organization(user_id, body.name, &pool).await?;
 
@@ -34,7 +32,7 @@ pub async fn all_orgs(
     Extension(auth): Extension<AuthContext>,
     Query(params): Query<OrgPaginationQuery>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user_id = claims.sub;
+    let user_id = require_user(&auth)?;
 
     let res = all_org_service(user_id, &pool, params.cursor, params.limit, params.order).await?;
 
@@ -51,7 +49,7 @@ pub async fn paticular_org(
     Extension(auth): Extension<AuthContext>,
     Path(org_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user_id = claims.sub;
+    let user_id = require_user(&auth)?;
 
     let res = one_org_service(&pool, user_id, org_id).await?;
 
@@ -64,9 +62,9 @@ pub async fn patch_org(
     Path(org_id): Path<Uuid>,
     Json(name): Json<OrgUpdate>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user_id = claims.sub;
+    let actor = resolver_actor(&auth, "organization:update", org_id, &pool).await?;
 
-    update_org_service(&pool, user_id, org_id, name.name).await?;
+    update_org_service(&pool, actor.actor_id, org_id, name.name).await?;
 
     Ok(StatusCode::NO_CONTENT)
 }
