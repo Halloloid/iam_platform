@@ -12,6 +12,7 @@ use validator::Validate;
 
 use crate::{
     config::{auth_config::AuthContext, response_config::AppError},
+    handlers::require_user,
     models::{
         session::ReqToken,
         user::{Create, LoginReq, LoginRes, UpdateProfile},
@@ -90,7 +91,7 @@ pub async fn view_profile(
     Extension(auth): Extension<AuthContext>,
     State(pool): State<PgPool>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user_id = claims.sub;
+    let user_id = require_user(&auth)?;
 
     let user = fnd_by_user_id(&pool, user_id).await?;
 
@@ -103,7 +104,7 @@ pub async fn update_profile(
     Json(name): Json<UpdateProfile>,
 ) -> Result<impl IntoResponse, AppError> {
     name.validate().map_err(AppError::Validation)?;
-    let user_id = claims.sub;
+    let user_id = require_user(&auth)?;
 
     update_user(&pool, user_id, name.name).await?;
 
