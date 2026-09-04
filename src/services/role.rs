@@ -6,7 +6,6 @@ use crate::{
     models::role::Role,
     repositories::{
         audit_logs::write_audit_logs,
-        organization::check_permission,
         role::{
             all_roles, check_role_in_use, create_role, delete_role, paticular_role, role_exists,
             update_role,
@@ -16,16 +15,10 @@ use crate::{
 
 pub async fn create_role_service(
     pool: &Pool<Postgres>,
-    user_id: Uuid,
+    actor_id: Uuid,
     name: String,
     org_id: Uuid,
 ) -> Result<Uuid, AppError> {
-    let allowed = check_permission(pool, user_id, org_id, "role:create").await?;
-
-    if !allowed {
-        return Err(AppError::Forbidden);
-    }
-
     if role_exists(pool, org_id, &name.to_lowercase()).await? {
         return Err(AppError::Conflict(String::from("This Role Already Exists")));
     }
@@ -35,7 +28,7 @@ pub async fn create_role_service(
     let _ = write_audit_logs(
         pool,
         "role:created",
-        user_id,
+        actor_id,
         &format!("organization:{}/role:{}", org_id, name),
     )
     .await;
@@ -52,16 +45,10 @@ pub async fn all_roles_service(pool: &Pool<Postgres>, org_id: Uuid) -> Result<Ve
 pub async fn update_role_service(
     pool: &Pool<Postgres>,
     org_id: Uuid,
-    user_id: Uuid,
+    actor_id: Uuid,
     id: Uuid,
     name: String,
 ) -> Result<(), AppError> {
-    let allowed = check_permission(pool, user_id, org_id, "role:update").await?;
-
-    if !allowed {
-        return Err(AppError::Forbidden);
-    }
-
     let role = paticular_role(pool, org_id, id).await?;
 
     if let Some(role) = role {
@@ -73,7 +60,7 @@ pub async fn update_role_service(
             let _ = write_audit_logs(
                 pool,
                 "role:updated",
-                user_id,
+                actor_id,
                 &format!("organization:{}/role:{}", org_id, name),
             )
             .await;
@@ -88,15 +75,9 @@ pub async fn update_role_service(
 pub async fn delete_role_service(
     pool: &Pool<Postgres>,
     org_id: Uuid,
-    user_id: Uuid,
+    actor_id: Uuid,
     id: Uuid,
 ) -> Result<(), AppError> {
-    let allowed = check_permission(pool, user_id, org_id, "role:delete").await?;
-
-    if !allowed {
-        return Err(AppError::Forbidden);
-    }
-
     let role = paticular_role(pool, org_id, id).await?;
 
     if let Some(role) = role {
@@ -110,8 +91,8 @@ pub async fn delete_role_service(
 
                 let _ = write_audit_logs(
                     pool,
-                    "role:deleted",
-                    user_id,
+                    "role:delete",
+                    actor_id,
                     &format!("organization:{}/role:{}", org_id, role.name),
                 )
                 .await;
