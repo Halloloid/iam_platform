@@ -10,6 +10,7 @@ use uuid::Uuid;
 
 use crate::{
     config::{auth_config::AuthContext, response_config::AppError},
+    handlers::require_user,
     services::session::{list_sessions, revoke_session_service},
 };
 
@@ -18,7 +19,7 @@ pub async fn list_session_handler(
     headers: HeaderMap,
     Extension(auth): Extension<AuthContext>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user_id = claims.sub;
+    let user_id = require_user(&auth)?;
 
     let device = headers
         .get(header::USER_AGENT)
@@ -38,7 +39,7 @@ pub async fn revoke_session_handler(
     Extension(auth): Extension<AuthContext>,
     Path(session_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user_id = claims.sub;
+    let user_id = require_user(&auth)?;
 
     revoke_session_service(&pool, user_id, session_id).await?;
 
