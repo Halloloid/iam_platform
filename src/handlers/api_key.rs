@@ -11,7 +11,7 @@ use validator::Validate;
 
 use crate::{
     config::{auth_config::AuthContext, response_config::AppError},
-    handlers::require_user,
+    handlers::{require_user, resolver_actor},
     models::api_key::CreateApiRequest,
     services::api_key::{all_api_keys_service, create_api_key_service, delete_api_keys},
 };
@@ -44,9 +44,9 @@ pub async fn all_api_keys_handler(
     Extension(auth): Extension<AuthContext>,
     Path(org_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user_id = require_user(&auth)?;
+    let actor = resolver_actor(&auth, Some("api_key:read"), org_id, &pool).await?;
 
-    let keys = all_api_keys_service(&pool, user_id, org_id).await?;
+    let keys = all_api_keys_service(&pool, actor.actor_id, org_id).await?;
 
     Ok(Json(json!({
     "data":keys

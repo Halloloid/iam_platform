@@ -70,13 +70,9 @@ pub async fn create_api_key_service(
 
 pub async fn all_api_keys_service(
     pool: &PgPool,
-    user_id: Uuid,
+    _actor_id: Uuid,
     org_id: Uuid,
 ) -> Result<Vec<ApiKeyListItem>, AppError> {
-    if !check_permission(pool, user_id, org_id, "api_key:read").await? {
-        return Err(AppError::Forbidden);
-    }
-
     fetch_api_keys(pool, org_id).await
 }
 

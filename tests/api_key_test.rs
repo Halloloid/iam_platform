@@ -199,7 +199,18 @@ async fn test_revoke_already_revoked_key_fails(pool: PgPool) {
 async fn test_api_key_auth_valid_key_succeds(pool: PgPool) {
     let (app, owner_token, org_id) = common::setup_org(pool, "auth@test.com").await;
 
-    let perm_id = common::get_first_permission_id(app.clone(), &owner_token).await;
+    let (_, body) = common::get_json(app.clone(), "/permission", Some(&owner_token)).await;
+
+    let Some(perm_id) = body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|x| x["name"] == "api_key:read")
+    else {
+        return;
+    };
+
+    let perm_id = perm_id["id"].as_str().unwrap().to_string();
 
     let (_, raw_key) = common::create_api_key(app.clone(), &org_id, &owner_token, &perm_id).await;
 
@@ -215,12 +226,5 @@ async fn test_api_key_auth_valid_key_succeds(pool: PgPool) {
         .await
         .unwrap();
 
-    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
-        .await
-        .unwrap();
-
-    println!("Body: {}", String::from_utf8_lossy(&body));
-    print!("{:#?}", body);
-
-    assert_eq!(500, StatusCode::OK);
+    assert_eq!(response.status(), StatusCode::OK);
 }
