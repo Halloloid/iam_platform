@@ -6,7 +6,6 @@ use crate::{
     models::permission::Permission,
     repositories::{
         audit_logs::write_audit_logs,
-        organization::check_permission,
         permission::{
             all_permissions, assign_permission, delete_permission_of_role, role_permission,
         },
@@ -24,17 +23,11 @@ pub async fn assign_permissions_service(
     pool: &PgPool,
     permission_ids: Vec<Uuid>,
     role_id: Uuid,
-    user_id: Uuid,
+    actor_id: Uuid,
     org_id: Uuid,
 ) -> Result<(), AppError> {
     if permission_ids.is_empty() {
         return Err(AppError::BadRequest("No Permission Provided".into()));
-    }
-
-    let allowed = check_permission(pool, user_id, org_id, "permission:assign").await?;
-
-    if !allowed {
-        return Err(AppError::Forbidden);
     }
 
     if paticular_role(pool, org_id, role_id).await?.is_none() {
@@ -46,7 +39,7 @@ pub async fn assign_permissions_service(
     let _ = write_audit_logs(
         pool,
         "permission:assigned",
-        user_id,
+        actor_id,
         &format!(
             "organization:{}/role:{}/permission:{:#?}",
             org_id, role_id, permission_ids
@@ -72,7 +65,7 @@ pub async fn role_permission_service(
 }
 
 pub async fn delete_permission_of_role_service(
-    user_id: Uuid,
+    actor_id: Uuid,
     org_id: Uuid,
     pool: &PgPool,
     permission_ids: Vec<Uuid>,
@@ -80,12 +73,6 @@ pub async fn delete_permission_of_role_service(
 ) -> Result<(), AppError> {
     if permission_ids.is_empty() {
         return Err(AppError::BadRequest("No Permission Provided".into()));
-    }
-
-    let allowed = check_permission(pool, user_id, org_id, "permission:assign").await?;
-
-    if !allowed {
-        return Err(AppError::Forbidden);
     }
 
     if paticular_role(pool, org_id, role_id).await?.is_none() {
@@ -97,7 +84,7 @@ pub async fn delete_permission_of_role_service(
     let _ = write_audit_logs(
         pool,
         "permission:removed",
-        user_id,
+        actor_id,
         &format!(
             "organization:{}/role:{}/permission:{:#?}",
             org_id, role_id, permission_ids
