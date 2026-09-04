@@ -11,6 +11,7 @@ use validator::Validate;
 
 use crate::{
     config::{auth_config::AuthContext, response_config::AppError},
+    handlers::require_user,
     models::api_key::CreateApiRequest,
     services::api_key::{all_api_keys_service, create_api_key_service, delete_api_keys},
 };
@@ -21,7 +22,7 @@ pub async fn create_api_key_handler(
     Path(org_id): Path<Uuid>,
     Json(req): Json<CreateApiRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user_id = claims.sub;
+    let user_id = require_user(&auth)?;
 
     req.validate().map_err(AppError::Validation)?;
 
@@ -43,7 +44,7 @@ pub async fn all_api_keys_handler(
     Extension(auth): Extension<AuthContext>,
     Path(org_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user_id = claims.sub;
+    let user_id = require_user(&auth)?;
 
     let keys = all_api_keys_service(&pool, user_id, org_id).await?;
 
@@ -57,7 +58,7 @@ pub async fn delete_api_key_handler(
     Extension(auth): Extension<AuthContext>,
     Path((org_id, key_id)): Path<(Uuid, Uuid)>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user_id = claims.sub;
+    let user_id = require_user(&auth)?;
 
     delete_api_keys(user_id, &pool, key_id, org_id).await?;
 

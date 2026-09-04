@@ -8,6 +8,7 @@ use sqlx::PgPool;
 
 use crate::{
     config::{auth_config::AuthContext, response_config::AppError},
+    handlers::require_user,
     models::audit_logs::AuditLogPagination,
     services::audit_logs::{org_logs_service, user_logs_service},
 };
@@ -17,7 +18,7 @@ pub async fn user_logs_handler(
     Extension(auth): Extension<AuthContext>,
     Query(params): Query<AuditLogPagination>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user_id = claims.sub;
+    let user_id = require_user(&auth)?;
 
     let data = user_logs_service(pool, user_id, params.cursor, params.limit, params.order).await?;
 
@@ -31,12 +32,10 @@ pub async fn user_logs_handler(
 
 pub async fn org_logs_handler(
     State(pool): State<PgPool>,
-    Extension(auth): Extension<AuthContext>,
+    Extension(_): Extension<AuthContext>,
     Path(org_id): Path<uuid::Uuid>,
     Query(params): Query<AuditLogPagination>,
 ) -> Result<impl IntoResponse, AppError> {
-    let _ = claims.sub;
-
     let data = org_logs_service(pool, org_id, params.limit, params.cursor, params.order).await?;
 
     Ok(Json(json!({
