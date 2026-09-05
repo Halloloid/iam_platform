@@ -188,3 +188,10 @@ pub async fn create_api_key(
 
     (key_id, raw_key)
 }
+
+#[allow(dead_code)]
+pub async fn get_session(app: axum::Router, token: &str) -> serde_json::Value {
+    let (_, body) = get_json(app, "/session", Some(token)).await;
+
+    body
+}
