@@ -228,3 +228,55 @@ async fn test_api_key_auth_valid_key_succeds(pool: PgPool) {
 
     assert_eq!(response.status(), StatusCode::OK);
 }
+
+#[sqlx::test]
+async fn test_api_key_auth_revoked_key_fails(pool: PgPool) {
+    let (app, owner_token, org_id) = common::setup_org(pool, "auth_revoked@test.com").await;
+
+    let perm_id = common::get_first_permission_id(app.clone(), &owner_token).await;
+
+    let (key_id, raw_key) =
+        common::create_api_key(app.clone(), &org_id, &owner_token, &perm_id).await;
+
+    common::request_json_auth(
+        app.clone(),
+        json!({}),
+        "DELETE",
+        &format!("/organization/{}/api_key/{}", org_id, key_id),
+        &owner_token,
+    )
+    .await;
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri(&format!("/organization/{}/api_key", org_id))
+                .header("Authorization", format!("Bearer {}", raw_key))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[sqlx::test]
+async fn test_api_key_auth_fake_key_fails(pool: PgPool) {
+    let (app, _owner_token, org_id) = common::setup_org(pool, "auth_revoked@test.com").await;
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri(&format!("/organization/{}/api_key", org_id))
+                .header("Authorization", "Bearer iam_fakekeynote12345")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+}
