@@ -1,7 +1,7 @@
 use axum::{
     Extension, Json,
     extract::{Path, State},
-    http::{HeaderMap, header},
+    http::{HeaderMap, StatusCode, header},
     response::IntoResponse,
 };
 use serde_json::json;
@@ -43,7 +43,10 @@ pub async fn revoke_session_handler(
 
     revoke_session_service(&pool, user_id, session_id).await?;
 
-    Ok(Json(json!({
-        "message":"Session Revoked"
-    })))
+    Ok((
+        StatusCode::NO_CONTENT,
+        Json(json!({
+            "message":"Session Revoked"
+        })),
+    ))
 }

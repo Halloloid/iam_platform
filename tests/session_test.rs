@@ -137,3 +137,130 @@ async fn test_api_key_cannot_access_sessions(pool: PgPool) {
 
     assert_eq!(response.status(), StatusCode::FORBIDDEN);
 }
+
+// Revoke Sessions ----------------
+#[sqlx::test]
+async fn test_revoke_session_success(pool: PgPool) {
+    let app = common::build_app(pool);
+
+    let token = common::register_and_login(app.clone(), "revoke@test.com").await;
+
+    let body = common::get_session(app.clone(), &token).await;
+
+    let session_id = body["data"].as_array().unwrap().first().unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+
+    let (status, _) = common::request_json_auth(
+        app,
+        json!({}),
+        "DELETE",
+        &format!("/session/{}", session_id),
+        &token,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::NO_CONTENT);
+}
+
+#[sqlx::test]
+async fn test_revoke_other_users_sessions_fails(pool: PgPool) {
+    let app = common::build_app(pool);
+
+    let token1 = common::register_and_login(app.clone(), "revoke1_fail@test.com").await;
+
+    let body1 = common::get_session(app.clone(), &token1).await;
+
+    let user1_session_id = body1["data"].as_array().unwrap().first().unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+
+    let token2 = common::register_and_login(app.clone(), "revoke2_fail@test.com").await;
+
+    let (status, _) = common::request_json_auth(
+        app,
+        json!({}),
+        "DELETE",
+        &format!("/session/{}", user1_session_id),
+        &token2,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::NOT_FOUND);
+}
+
+#[sqlx::test]
+async fn test_revoke_already_revoked_session(pool: PgPool) {
+    let app = common::build_app(pool);
+
+    let token = common::register_and_login(app.clone(), "revoke@test.com").await;
+
+    let body = common::get_session(app.clone(), &token).await;
+
+    let session_id = body["data"].as_array().unwrap().first().unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+
+    common::request_json_auth(
+        app.clone(),
+        json!({}),
+        "DELETE",
+        &format!("/session/{}", session_id),
+        &token,
+    )
+    .await;
+
+    let (status, _) = common::request_json_auth(
+        app,
+        json!({}),
+        "DELETE",
+        &format!("/session/{}", session_id),
+        &token,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::NOT_FOUND);
+}
+
+#[sqlx::test]
+async fn test_revoking_current_session_works(pool: PgPool) {
+    let app = common::build_app(pool);
+
+    let token = common::register_and_login(app.clone(), "revoke@test.com").await;
+
+    let body = common::get_session(app.clone(), &token).await;
+
+    let current_session_id = body["data"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|x| x["is_current"].as_bool().unwrap_or(false))
+        .unwrap()["id"]
+        .as_str()
+        .unwrap()
+        .to_string();
+
+    let (status, _) = common::request_json_auth(
+        app.clone(),
+        json!({}),
+        "DELETE",
+        &format!("/session/{}", current_session_id),
+        &token,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    let body = common::get_session(app.clone(), &token).await;
+
+    let session = body["data"].as_array().unwrap();
+
+    let still_active = session
+        .iter()
+        .any(|x| x["id"] == current_session_id && !x["is_revoked"].as_bool().unwrap_or(false));
+
+    assert!(!still_active);
+}

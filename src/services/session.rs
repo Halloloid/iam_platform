@@ -6,7 +6,7 @@ use crate::{
     models::session::SessionResponse,
     repositories::{
         audit_logs::write_audit_logs,
-        session::{fetch_user_sessions, find_active_session, revoke_session_by_id},
+        session::{fetch_user_sessions, find_latest_session, revoke_session_by_id},
     },
 };
 
@@ -15,7 +15,7 @@ pub async fn list_sessions(
     user_id: Uuid,
     device: String,
 ) -> Result<Vec<SessionResponse>, AppError> {
-    let current_session_id = find_active_session(pool, user_id, &device).await?;
+    let current_session_id = find_latest_session(pool, user_id, &device).await?;
 
     let Some(current_id) = current_session_id else {
         return Err(AppError::Unauthorized);
@@ -27,7 +27,7 @@ pub async fn list_sessions(
         .iter()
         .map(|x| SessionResponse {
             id: x.id,
-            device: device.clone(),
+            device: x.device.clone(),
             ip: x.ip.to_string(),
             created_at: x.created_at,
             expires_at: x.expires_at,

@@ -63,6 +63,26 @@ pub async fn find_active_session(
     Ok(None)
 }
 
+pub async fn find_latest_session(
+    pool: &Pool<Postgres>,
+    user_id: Uuid,
+    device: &str,
+) -> Result<Option<Uuid>, AppError> {
+    let session = sqlx::query!(
+        "SELECT id
+         FROM sessions
+         WHERE user_id = $1 AND device = $2
+         ORDER BY created_at DESC
+         LIMIT 1",
+        user_id,
+        device
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(session.map(|session| session.id))
+}
+
 pub async fn update_session(
     pool: &Pool<Postgres>,
     refresh_token: &str,
