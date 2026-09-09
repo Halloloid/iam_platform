@@ -13,7 +13,7 @@ use crate::{
     config::{auth_config::AuthContext, response_config::AppError},
     handlers::{require_user, resolver_actor},
     models::organization::{CreateOrgReq, OrgPaginationQuery, OrgUpdate},
-    repositories::organization::create_organization,
+    repositories::{audit_logs::write_audit_logs, organization::create_organization},
     services::organization::{all_org_service, one_org_service, update_org_service},
 };
 
@@ -27,6 +27,14 @@ pub async fn create(
     let user_id = require_user(&auth)?;
 
     let org_id = create_organization(user_id, body.name, &pool).await?;
+
+    let _ = write_audit_logs(
+        &pool,
+        "organization:created",
+        org_id,
+        &format!("organization:{}", org_id),
+    )
+    .await;
 
     Ok((StatusCode::CREATED, Json(json!({"id":org_id}))))
 }

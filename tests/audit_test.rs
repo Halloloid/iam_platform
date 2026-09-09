@@ -1,5 +1,6 @@
 use axum::http::StatusCode;
 use sqlx::PgPool;
+
 mod common;
 
 // Personal Audit Logs ----------
@@ -61,3 +62,91 @@ async fn test_personal_logs_only_show_own_actions(pool: PgPool) {
 
     assert!(!has_user2_id, "user1 should not see user2 logs");
 }
+
+// Org audit Logs ----
+
+#[sqlx::test]
+async fn test_get_org_audit_logs(pool: PgPool) {
+    let (app, token, org_id) = common::setup_org(pool, "org_audit_logs@test.com").await;
+
+    let (status, body) = common::get_json(
+        app.clone(),
+        &format!("/organization/{}/audit-logs", org_id),
+        Some(&token),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert!(body["data"].is_array());
+}
+
+#[sqlx::test]
+async fn test_orgs_logs_contains_org_created_event(pool: PgPool) {
+    let (app, token, org_id) = common::setup_org(pool, "check_org_has@test.com").await;
+
+    let (_, body) = common::get_json(
+        app.clone(),
+        &format!("/organization/{}/audit-logs", org_id),
+        Some(&token),
+    )
+    .await;
+
+    let logs = body["data"].as_array().unwrap();
+
+    let has_event = logs.iter().any(|x| x["action"] == "organization:created");
+
+    assert!(has_event, "org created event should present");
+}
+
+#[sqlx::test]
+async fn test_orgs_logs_non_member_fails(pool: PgPool) {
+    let (app, _token, org_id) = common::setup_org(pool, "check_org_has@test.com").await;
+
+    let token2 = common::register_and_login(app.clone(), "outsider@test.com").await;
+
+    let (status, _) = common::get_json(
+        app.clone(),
+        &format!("/organization/{}/audit-logs", org_id),
+        Some(&token2),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::FORBIDDEN);
+}
+
+#[sqlx::test]
+async fn test_org_logs_should_show_only_org_events(pool: PgPool) {
+    let (app, token, org_id) = common::setup_org(pool, "check_org_has@test.com").await;
+
+    let (_, body) = common::get_json(
+        app.clone(),
+        &format!("/organization/{}/audit-logs", org_id),
+        Some(&token),
+    )
+    .await;
+
+    let logs = body["data"].as_array().unwrap();
+
+    for log in logs {
+        let resource = log["resource"].as_str().unwrap();
+
+        assert!(
+            resource.starts_with(&format!("organization:{}", org_id)),
+            "log resource {} sholuld have scoped to org {}",
+            resource,
+            org_id
+        );
+    }
+}
+
+#[sqlx::test]
+async fn test_org_logs_without_token_fails(pool: PgPool) {
+    let (app, _token, org_id) = common::setup_org(pool, "check_org_has@test.com").await;
+
+    let (status, _) =
+        common::get_json(app, &format!("/organization/{}/audit-logs", org_id), None).await;
+
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
+
+// Pagination -------
