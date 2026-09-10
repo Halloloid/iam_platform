@@ -1,4 +1,5 @@
 use axum::http::StatusCode;
+use serde_json::json;
 use sqlx::PgPool;
 
 mod common;
@@ -150,3 +151,72 @@ async fn test_org_logs_without_token_fails(pool: PgPool) {
 }
 
 // Pagination -------
+
+#[sqlx::test]
+async fn test_audit_logs_pagination(pool: PgPool) {
+    let (app, token, org_id) = common::setup_org(pool, "audit_pagination@test.com").await;
+
+    for i in 0..5 {
+        common::request_json_auth(
+            app.clone(),
+            json!({"name":format!("Role {}",i)}),
+            "POST",
+            &format!("/organization/{}/role", org_id),
+            &token,
+        )
+        .await;
+    }
+
+    // Let first request with limit 2
+    let (status, body) = common::get_json(
+        app.clone(),
+        &format!("/organization/{}/audit-logs?limit=2", org_id),
+        Some(&token),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+
+    let logs = body["data"].as_array().unwrap();
+
+    assert_eq!(logs.len(), 2);
+
+    assert!(
+        !body["next cursor"].is_null(),
+        "next cursor should exists as more data is still there"
+    );
+
+    let cursor = body["next cursor"].as_str().unwrap();
+
+    let (status2, body2) = common::get_json(
+        app,
+        &format!(
+            "/organization/{}/audit-logs?limit=2&cursor={}",
+            org_id, cursor
+        ),
+        Some(&token),
+    )
+    .await;
+
+    assert_eq!(status2, StatusCode::OK);
+
+    let logs2 = body2["data"].as_array().unwrap();
+
+    assert_eq!(logs2.len(), 2);
+
+    // page 1 should not overlap with page 2
+
+    let page1_ids = logs
+        .iter()
+        .map(|l| l["id"].as_str().unwrap())
+        .collect::<Vec<&str>>();
+
+    let page2_ids = logs2
+        .iter()
+        .map(|l| l["id"].as_str().unwrap())
+        .collect::<Vec<&str>>();
+
+    for id in &page2_ids {
+        assert!(!page1_ids.contains(id), "page1 shoud not contain page2 ids");
+    }
+}
