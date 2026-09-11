@@ -19,6 +19,10 @@ SQLx migrations for the database schema and integration tests for API behavior.
 - Scoped API keys for service-to-service access.
 - User and organization audit logs.
 - Permission and ownership checks for protected resources.
+- Cursor-based pagination for unbounded collections.
+- Dual authentication — JWT for users, API keys for service-to-service access.
+- Bootstrap transaction — org creation atomically assigns Owner role and all permissions.
+- Soft deletes for users, organizations, and API keys.
 
 ## Architecture
 
@@ -96,18 +100,39 @@ scopes.
 
 - Rust toolchain with Cargo.
 - PostgreSQL 16 or compatible PostgreSQL.
+- sqlx-cli: `cargo install sqlx-cli`
 - Docker Compose is optional but recommended for local PostgreSQL.
 
 ## Configuration
 
-Create a `.env` file based on `.env.example`:
+Generate a secure JWT secret:
+    openssl rand -hex 32
 
-```text
-DATABASE_URL=postgres://...
-JWT_SECRET=...
-```
+Example .env:
+    DATABASE_URL=postgres://postgres:postgres@localhost:5432/iam_platform
+    JWT_SECRET=your-generated-secret-here
+    RUST_LOG=info
 
 Never commit real credentials or production secrets.
+
+## Quickstart
+
+1. Clone the repository
+   git clone https://github.com/Halloloid/iam_platform
+
+2. Create environment file
+   cp .env.example .env
+
+3. Start PostgreSQL
+   docker compose up db -d
+
+4. Run the application
+   cargo run
+
+5. Test registration
+   curl -X POST http://localhost:3000/auth/register \
+     -H "Content-Type: application/json" \
+     -d '{"email":"admin@test.com","password":"password123","name":"Admin"}'
 
 ## Running locally
 
@@ -178,7 +203,6 @@ iam_platform/
 ├── Cargo.lock
 ├── README.md
 ├── DESIGN.md
-├── AGENTS.md
 ├── Dockerfile
 ├── docker-compose.yml
 ├── migrations/

@@ -258,6 +258,16 @@ The primary database relationships are:
 Foreign keys and composite keys enforce ownership and membership relationships.
 New schema changes must be introduced as new ordered migrations.
 
+### Indexes
+
+- `organizations.created_at DESC` — supports cursor pagination on org listings
+- `membership.user_id` — supports membership lookups per user
+- `audit_logs.resource` — supports LIKE prefix queries for org-scoped logs
+- `audit_logs.actor_id` — supports personal audit log queries
+- `audit_logs.timestamp DESC` — supports cursor pagination on audit logs
+- `sessions.user_id` — supports session listing per user
+- `api_keys.key_hash` — supports O(1) key validation on every authenticated request
+
 ## 10. Error handling
 
 The shared `AppError` type maps application failures to HTTP responses:
@@ -280,7 +290,6 @@ iam_platform/
 ├── Cargo.lock
 ├── README.md
 ├── DESIGN.md
-├── AGENTS.md
 ├── Dockerfile
 ├── docker-compose.yml
 ├── migrations/
@@ -304,3 +313,85 @@ audit logs.
 ## 12. Database ER diagram
 
 <img width="1000" alt="IAM platform database entity relationship diagram" src="https://github.com/user-attachments/assets/fba6d491-2ddc-44b2-9c3e-001b00648cc4" />
+
+## 13. Design decisions
+
+### Stateless JWT validation
+Access tokens are validated by signature and expiry only — no database
+lookup per request. Session revocation is enforced at refresh time: a
+revoked session cannot obtain a new access token. This trades immediate
+revocation for eliminating per-request database hits, which is the correct
+tradeoff at this scale.
+
+### Device-based session deduplication
+Repeated login from the same device updates the existing session rather
+than creating a new one. This prevents session table bloat from repeated
+logins and keeps the session list meaningful to the user.
+
+### Bootstrap transaction
+Organization creation runs five operations in a single database
+transaction: insert organization, insert membership, insert Owner role,
+assign all system permissions to Owner, assign Owner role to creator.
+Either all five succeed or none do — no partial organization state is
+possible.
+
+### Name-based Owner role protection
+The Owner role is protected by name rather than a flag column. The
+UNIQUE(name, org_id) constraint prevents a second "owner" role from being
+created in the same organization. POST /role explicitly rejects the name
+"owner". This avoids an extra migration while achieving the same guarantee.
+
+### Soft deletes
+Users, organizations, and API keys use is_deleted rather than hard
+deletion. This preserves audit log integrity — audit records reference
+actor IDs that must remain resolvable even after a resource is logically
+removed.
+
+### Cursor-based pagination
+Organization and audit log listings use cursor-based pagination over
+offset. Cursor pagination avoids the skipped-record problem under
+concurrent inserts and eliminates full-table scans at large offsets. The
+cursor encodes created_at as an opaque base64 string so clients treat it
+as a token rather than a manipulable timestamp.
+
+### Global permissions, org-scoped roles
+Permissions are system-wide and seeded at migration time. Roles are
+organization-owned and can be customized per org. This means the
+permission vocabulary is stable and predictable while orgs retain full
+control over how permissions are grouped into roles.
+
+### Dual authentication context
+The middleware produces either AuthContext::User or AuthContext::ApiKey.
+User-only endpoints reject API keys explicitly via require_user. 
+Org-scoped endpoints accept both via resolve_actor, which enforces RBAC
+for users and scope checks for API keys through a single code path.
+
+
+## 14. Tradeoffs
+
+### Stateless tokens vs immediate revocation
+Stateless JWT validation means a revoked session's access token remains
+valid until expiry (up to 15 minutes). A Redis blocklist would enable
+immediate revocation without per-request database hits. The current design
+accepts the delay in exchange for simplicity.
+
+### Name-based role protection vs flag column
+Using the Owner name as the protection mechanism means protection depends
+on application-level guards rather than a database constraint. An is_system
+flag enforced at the DB level would be stronger. The name approach was
+chosen because the UNIQUE constraint already prevents duplicate Owner roles
+and avoids an additional migration.
+
+### Single database vs caching layer
+All permission checks query PostgreSQL directly. At higher request volumes,
+a Redis cache for permission lookups would reduce database load
+significantly. The current design is correct for this scale and the cache
+layer could be added without changing the authorization model.
+
+### Fetch-all vs pagination for small collections
+Roles, sessions, and permissions use fetch-all rather than cursor
+pagination. These collections are inherently bounded per organization or
+user. Paginating them would add complexity with no practical benefit at
+realistic data volumes.
+
+
