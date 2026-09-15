@@ -19,18 +19,27 @@ use crate::{
     middleware::auth_middleware::auth,
 };
 
-pub fn main_router(pool: Pool<Postgres>) -> Router {
+pub fn main_router(pool: Pool<Postgres>,enabel_rate_limiter :bool) -> Router {
 
+    
     let login_route = Router::new()
-        .route("/auth/login", post(login))
-        .layer(login_rate_limiter());
+        .route("/auth/login", post(login));
 
     let auth_route = Router::new()
         .route("/auth/register", post(register))
-        .route("/auth/refresh", post(refresh))
-        .layer(auth_rate_limiter());
+        .route("/auth/refresh", post(refresh));
     
-    
+    let login_route = if enabel_rate_limiter{
+        login_route.layer(login_rate_limiter())
+    }else {
+        login_route
+    };
+
+    let auth_route = if enabel_rate_limiter{
+        auth_route.layer(auth_rate_limiter())
+    }else {
+        auth_route
+    };
     
     let public_apis = Router::new()
         .route("/health", get(health::health))

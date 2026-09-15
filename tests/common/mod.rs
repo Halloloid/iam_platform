@@ -9,7 +9,7 @@ use tower::ServiceExt;
 
 // App with test pool
 pub fn build_app(pool: PgPool) -> Router {
-    iam_platform::routes::main_router::main_router(pool)
+    iam_platform::routes::main_router::main_router(pool,false)
 }
 
 pub async fn request_json_no_auth(
