@@ -66,7 +66,7 @@ pub async fn get_json(app: Router, path: &str, token: Option<&str>) -> (StatusCo
 
 // registering a user and returns a token - used in many tests
 pub async fn register_and_login(app: Router, email: &str) -> String {
-    request_json_no_auth(
+    let (status,body1) = request_json_no_auth(
         app.clone(),
         "POST",
         "/auth/register",
@@ -88,6 +88,9 @@ pub async fn register_and_login(app: Router, email: &str) -> String {
         }),
     )
     .await;
+
+    println!("Login Body:{:#?}",body1);
+    println!("Login Status:{status}");
 
     body["access_token"].as_str().unwrap().to_string()
 }
